@@ -1,0 +1,29 @@
+use_default_settings: true
+
+search:
+  autocomplete: "duckduckgo"
+  favicon_resolver: "duckduckgo"
+  default_lang: "en"
+
+server:
+  limiter: true
+  secret_key: "ultrasecretkey"  # Is overwritten by ${SEARXNG_SECRET}
+  image_proxy: true
+
+valkey:
+  # URL to connect valkey database. Is overwritten by ${SEARXNG_VALKEY_URL}.
+  # https://docs.searxng.org/admin/settings/settings_valkey.html#settings-valkey
+  # url: valkey://localhost:6379/0
+  url: valkey://valkey:6379/0
+
+ui:
+  default_locale: "en"
+  # Open result links in a new tab by default
+  results_on_new_tab: true
+  theme_args:
+    # style of simple theme: auto, light, dark
+    simple_style: black
+
+outgoing:
+  # default timeout in seconds, can be override by engine
+  request_timeout: 20.0
