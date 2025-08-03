@@ -9,6 +9,7 @@ server:
   limiter: true
   secret_key: "ultrasecretkey"  # Is overwritten by ${SEARXNG_SECRET}
   image_proxy: true
+  method: "GET"
 
 valkey:
   # URL to connect valkey database. Is overwritten by ${SEARXNG_VALKEY_URL}.
