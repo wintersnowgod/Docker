@@ -1,7 +1,7 @@
 services:
   vaultwarden:
-    image: 'vaultwarden/server:latest'
     container_name: vaultwarden
+    image: 'vaultwarden/server:latest'
     restart: unless-stopped
     networks:
       - vaultwarden
