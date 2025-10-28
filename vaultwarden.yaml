@@ -3,12 +3,7 @@ services:
     container_name: vaultwarden
     image: 'vaultwarden/server:latest'
     restart: unless-stopped
-    networks:
-      - vaultwarden
     volumes:
       - ./vaultwarden/vw-data/:/data/
     ports:
       - 81:80
-
-networks:
-  vaultwarden:
