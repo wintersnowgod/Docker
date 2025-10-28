@@ -18,6 +18,8 @@ services:
     restart: unless-stopped
     environment:
       - SEARXNG_BASE_URL=${SEARXNG_BASE_URL}
+    depends_on:
+      - valkey
     ports:
       - "8181:8080"
     volumes:
