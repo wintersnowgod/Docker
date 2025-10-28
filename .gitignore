@@ -2,3 +2,4 @@ searxng/
 vaultwarden/
 syncyomi/
 syncthing/
+.env

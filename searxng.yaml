@@ -16,8 +16,8 @@ services:
     container_name: searxng
     image: "docker.io/searxng/searxng:latest"
     restart: unless-stopped
-    networks:
-      - searxng
+    environment:
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL}
     ports:
       - "8181:8080"
     volumes:
