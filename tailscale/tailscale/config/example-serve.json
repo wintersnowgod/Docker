@@ -5,7 +5,7 @@
     }
   },
   "Web": {
-    "archlinux.ling-everest.ts.net:443": {
+    "${TS_CERT_DOMAIN}:443": {
       "Handlers": {
         "/searxng": {
           "Proxy": "http://localhost:8181"
@@ -15,5 +15,8 @@
         }
       }
     }
+  },
+  "AllowFunnel": {
+    "${TS_CERT_DOMAIN}:443": false
   }
 }

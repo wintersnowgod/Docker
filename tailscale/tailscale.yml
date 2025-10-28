@@ -1,0 +1,28 @@
+services:
+  ts-example: #I use example to give example name replace it with the name for your actual service
+    container_name: ts-example
+    hostname: example
+    image: tailscale/tailscale:latest
+    ports:
+      - porttomake:portofservice #port for the webapp or service connected to tailscale to expose on localhost:port. the "portofservice" is the port of the actual app like searxng has port 8080 by default. the "porttomake" is the port you want it to be in. So if you set 8181:8080 then the searxng will be accessable in http://localhost:8181 instead of the default http://localhost:8080
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY} #create a .env file on the dir where this yml is and assign TS_AUTHKEY=yourauthkey there
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/example-serve.json #if you use serve change example-serve.json to your serve config file name and edit it as necessary. you can also see funnel there. Serve causes your service to be accessable by https on your tailscale network whereas funnel makes it accessable on the public internet via https. You can use either serve or funnel or both. Read more about it in tailscale docs.
+      - TS_EXTRA_ARGS=--advertise-exit-node
+      - TS_USERSPACE=false
+    volumes:
+      - ./example/tailscale/state:/var/lib/tailscale #Inside the directiory of the example so it doesnot conflict with others. You can have it ./tailscale/state if you are going to run only one tailscale docker
+      - ./tailscale/config:/config #./tailscale/config this is where you will keep your serve configs
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+    restart: unless-stopped
+
+# The reason why i dont use tailscale in docker is because connecting its service to other machines goes through DERP relay instead of direct connection
+# This is because docker uses NAT connection.
+# So this causes very slow loading of my services.
+# Using tailscale on host native pkg has direct connection so it is much faster.
+# With my insufficient knowledge about any networking I could not find a way to fix direct connection for docker container tailscale.
+# If anyone can help me please reach out on issues or email. Thank you.
