@@ -2,7 +2,7 @@ services:
   syncthing:
     image: syncthing/syncthing
     container_name: syncthing
-    hostname: RoSl-syncthing
+    hostname: HPX360
     environment:
       - PUID=1000
       - PGID=1000
