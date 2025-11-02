@@ -1,0 +1,18 @@
+#!/bin/bash
+cd "$(dirname "$(readlink -f "$0")")" || exit
+name=$1
+if [ -n "$1" ]; then
+    file=$(find . -maxdepth 1 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
+    if [ -f "$file" ]; then
+        docker compose -f "$file" -p "$name" down
+    else
+        echo "File $name.yml/yaml not found."
+        exit 1
+    fi
+else
+    for file in *.yml *.yaml; do
+        [ -f "$file" ] || continue
+        name="${file%.*}"
+        docker compose -f "$file" -p "$name" down
+    done
+fi
