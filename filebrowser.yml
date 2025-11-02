@@ -1,0 +1,11 @@
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    ports:
+      - "82:80"
+    volumes:
+      - /home:/srv
+      - ./filebrowser/database:/database
+      - ./filebrowser/config:/config
+    restart: unless-stopped
