@@ -1,6 +1,10 @@
-searxng/
-vaultwarden/
-syncyomi/
-syncthing/
-filebrowser/
+searxng/searxng/
+vaultwarden/vaultwarden/
+syncyomi/syncyomi/
+syncthing/syncthing/
+filebrowser/filebrowser/
+pihole/pihole/
+immich/library/
+immich/model_cache/
+immich/postgres/
 .env
