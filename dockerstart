@@ -2,7 +2,7 @@
 cd "$(dirname "$(readlink -f "$0")")" || exit
 name=$1
 if [ -n "$1" ]; then
-    file=$(find . -maxdepth 1 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
+    file=$(find . -maxdepth 2 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
     if [ -f "$file" ]; then
         docker compose -f "$file" -p "$name" up -d
     else
@@ -10,9 +10,15 @@ if [ -n "$1" ]; then
         exit 1
     fi
 else
-    for file in *.yml *.yaml; do
-        [ -f "$file" ] || continue
-        name="${file%.*}"
+    find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \) | while read -r file; do
+        name=$(basename "${file%.*}")
         docker compose -f "$file" -p "$name" up -d
     done
+fi
+
+start_status=$?
+if [[ $start_status -eq 0 ]]; then
+    echo "success!"
+else
+    echo "failure!"
 fi
