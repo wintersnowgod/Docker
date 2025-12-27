@@ -39,3 +39,12 @@ http://localhost:81
 `docker compose -f watchtower.yaml -p watchtower up -d`  
 - To stop the container  
 `docker compose -f watchtower.yaml -p watchtower down`  
+
+## Filebrowser  
+- It is a filebrowser to access your files remotely from web. You can specify the directory to access in the compose file by setting `dir` env variable in your .env file.
+- Run with  
+`docker compose -f filebrowser.yaml -p filebrowser up -d`  
+- To stop the container  
+`docker compose -f filebrowser.yaml -p filebrowser down`  
+- and access it through  
+http://localhost:82
