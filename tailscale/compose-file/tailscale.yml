@@ -12,17 +12,10 @@ services:
       - TS_EXTRA_ARGS=--advertise-exit-node
       - TS_USERSPACE=false
     volumes:
-      - ./example/tailscale/state:/var/lib/tailscale #Inside the directiory of the example so it doesnot conflict with others. You can have it ./tailscale/state if you are going to run only one tailscale docker
-      - ./tailscale/config:/config #./tailscale/config this is where you will keep your serve configs
+      - ${TS_STATE_DIR}:/var/lib/tailscale #Inside the directiory of the example so it doesnot conflict with others. You can have it ./tailscale/state if you are going to run only one tailscale docker
+      - ${TS_CONFIG_DIR}:/config #this is where you will keep your serve configs
     devices:
       - /dev/net/tun:/dev/net/tun
     cap_add:
       - net_admin
     restart: unless-stopped
-
-# The reason why i dont use tailscale in docker is because connecting its service to other machines goes through DERP relay instead of direct connection
-# This is because docker uses NAT connection.
-# So this causes very slow loading of my services.
-# Using tailscale on host native pkg has direct connection so it is much faster.
-# With my insufficient knowledge about any networking I could not find a way to fix direct connection for docker container tailscale.
-# If anyone can help me please reach out on issues or email. Thank you.
