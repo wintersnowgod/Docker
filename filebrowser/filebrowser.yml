@@ -5,7 +5,7 @@ services:
     ports:
       - "82:80"
     volumes:
-      - /home:/srv
+      - ${dir}:/srv
       - ./filebrowser/database:/database
       - ./filebrowser/config:/config
     restart: unless-stopped
