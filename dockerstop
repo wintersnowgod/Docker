@@ -1,24 +1,25 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 cd "$(dirname "$(readlink -f "$0")")" || exit
 name=$1
 if [ -n "$1" ]; then
-    file=$(find . -maxdepth 2 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
-    if [ -f "$file" ]; then
-        docker compose -f "$file" -p "$name" down
-    else
-        echo "File $name.yml/yaml not found."
-        exit 1
-    fi
+  file=$(find . -maxdepth 2 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
+  if [ -f "$file" ]; then
+    docker compose -f "$file" -p "$name" down
+  else
+    echo "File $name.yml/yaml not found."
+    exit 1
+  fi
 else
-    find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \) | while read -r file; do
-        name=$(basename "${file%.*}")
-        docker compose -f "$file" -p "$name" down
-    done
+  find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \) | while read -r file; do
+    name=$(basename "${file%.*}")
+    docker compose -f "$file" -p "$name" down
+  done
 fi
 
 stop_status=$?
 if [[ $stop_status -eq 0 ]]; then
-    echo "success!"
+  echo "success!"
 else
-    echo "failure!"
+  echo "failure!"
 fi

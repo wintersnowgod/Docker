@@ -1,30 +1,31 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 cd "$(dirname "$(readlink -f "$0")")" || exit
 name=$1
 if [ -n "$name" ]; then
-    if docker ps --format '{{.Names}}' | grep -qw "$name"; then
-        file=$(find . -maxdepth 2 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
-        if [ -f "$file" ]; then
-            docker compose -f "$file" -p "$name" down
-            docker compose -f "$file" -p "$name" up -d
-        else
-            echo "File $name.yml/yaml not found."
-            exit 1
-        fi
+  if docker ps --format '{{.Names}}' | grep -qw "$name"; then
+    file=$(find . -maxdepth 2 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
+    if [ -f "$file" ]; then
+      docker compose -f "$file" -p "$name" down
+      docker compose -f "$file" -p "$name" up -d
     else
-        echo "Docker container $name not found"
+      echo "File $name.yml/yaml not found."
+      exit 1
     fi
+  else
+    echo "Docker container $name not found"
+  fi
 else
-    find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \) | while read -r file; do
-        name=$(basename "${file%.*}")
-        docker compose -f "$file" -p "$name" down
-        docker compose -f "$file" -p "$name" up -d
-    done
+  find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \) | while read -r file; do
+    name=$(basename "${file%.*}")
+    docker compose -f "$file" -p "$name" down
+    docker compose -f "$file" -p "$name" up -d
+  done
 fi
 
 restart_status=$?
 if [[ $restart_status -eq 0 ]]; then
-    echo "success!"
+  echo "success!"
 else
-    echo "failure!"
+  echo "failure!"
 fi
