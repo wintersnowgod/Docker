@@ -6,6 +6,7 @@ syncyomi/syncyomi/
 syncthing/syncthing/
 filebrowser/filebrowser/
 pihole/pihole/
+pihole/tailscale
 immich/library/
 immich/model_cache/
 immich/postgres/
