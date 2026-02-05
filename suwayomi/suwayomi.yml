@@ -25,12 +25,13 @@ services:
       - AUTH_MODE=simple_login
       - AUTH_USERNAME=${username}
       - AUTH_PASSWORD=${password}
-      #      - EXTENSION_REPOS=["http://github.com/orginazation-name/repo-name", "http://github.com/orginazation-name-2/repo-name-2"]
+      #- EXTENSION_REPOS=["http://github.com/orginazation-name/repo-name", "http://github.com/orginazation-name-2/repo-name-2"]
       - EXTENSION_REPOS=["https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json"]
       - UPDATE_EXCLUDE_UNREAD=false
       - UPDATE_EXCLUDE_STARTED=false
       - UPDATE_EXCLUDE_COMPLETED=false
       - UPDATE_MANGA_INFO=true
+      - WEB_UI_FLAVOR=WebUI # USE WebUI for default. VUI for the vui and Custom for others. To use custom replace Suwayomi/data/WebUI/ contents with other web ui you want to use
     volumes:
       - ./Suwayomi/data:/home/suwayomi/.local/share/Tachidesk
     ports:
@@ -42,4 +43,19 @@ services:
     container_name: flaresolverr
     environment:
       - TZ=${TZ} # Use TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    restart: unless-stopped
+
+  vui3:
+    image: ghcr.io/suwayomi/suwayomi-vui
+    # ports:
+    #   - "9013:8080"
+    environment:
+      - suwayomi=http://suwayomi:4567/
+      # will proxy the suwayomi server to the UI
+      # if you plan on proxying it externally then this is unnecessary
+      - theme=wintry
+      # defaults to skeleton
+      # is for the SSR to stop off first loads
+      # any of the themes avalabe in VUI
+      # skeleton, wintry, crimson, gold-nouveau, hamlindigo, modern, rocket, sahara, seafoam, vintage
     restart: unless-stopped
