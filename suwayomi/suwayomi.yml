@@ -33,7 +33,7 @@ services:
       - UPDATE_MANGA_INFO=true
       - WEB_UI_FLAVOR=WebUI # USE WebUI for default. VUI for the vui and Custom for others. To use custom replace Suwayomi/data/WebUI/ contents with other web ui you want to use
     volumes:
-      - ./Suwayomi/data:/home/suwayomi/.local/share/Tachidesk
+      - ./suwayomi/data:/home/suwayomi/.local/share/Tachidesk
     ports:
       - "4567:4567"
     restart: on-failure:3
