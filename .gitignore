@@ -1,4 +1,5 @@
-searxng/searxng/
+searxng/searxng/data/
+searxng/searxng/valkey
 vaultwarden/vaultwarden/
 suwayomi/suwayomi/
 syncyomi/syncyomi/
