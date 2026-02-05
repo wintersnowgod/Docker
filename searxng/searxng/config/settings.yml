@@ -1,0 +1,29 @@
+use_default_settings: true
+
+search:
+  autocomplete: "duckduckgo"
+  favicon_resolver: "duckduckgo"
+  default_lang: "auto"
+# Available languages
+  # languages:
+  #   - all
+  #   - en
+  #   - en-US
+  #   - de
+  #   - it-IT
+  #   - fr
+  #   - fr-BE
+
+ui:
+  # Default interface locale - leave blank to detect from browser information or
+  # use codes from the 'locales' config section
+  default_locale: ""
+  # Open result links in a new tab by default
+  results_on_new_tab: true
+  theme_args:
+    # style of simple theme: auto, light, dark
+    simple_style: black
+
+outgoing:
+  # default timeout in seconds, can be override by engine
+  request_timeout: 20.0
