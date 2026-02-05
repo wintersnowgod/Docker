@@ -103,7 +103,18 @@ port=84
 `docker compose -f pihole.yaml -p pihole up -d`  
 - To stop the container  
 `docker compose -f pihole.yaml -p pihole down`  
-- and access it through  
+- I use pihole with a docker tailscale sidecar so i dont need to set the `port` env variable. If you dont want to use pihole with tailscale in docker then remove all lines after `ts-pihole`.  
+- after that you can   
+- either change the `network mode` line to be:-  
+```
+network_mode: host
+```
+and also uncomment `FTLCONF_webserver_port: ${port}` line and set the `port` env variable in .env file. This will make the DNS to be your localhost ie `127.0.0.1`  
+- or remove the `network_mode` line and uncomment the `ports:` and its contents. This will make the DNS to be the output of following command  
+```
+ip addr show docker0 | grep inet | awk '{print $2}' | sed 's|/.*||'
+```
+- You can access the control dashboard through  
 http://localhost:84  
 - For any additional info refer to  
 https://github.com/pi-hole/docker-pi-hole/  
