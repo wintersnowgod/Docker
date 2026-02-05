@@ -130,8 +130,7 @@ http://localhost:4567
 - For additional info refer to  
 https://github.com/Suwayomi/Suwayomi-Server-docker  
   
-```
-```
+
 ## Syncyomi
 - It is a application to sync your Tachiyomi/Mihon and their forks library cross device if supported.  
 - set `TZ` env variable in .env file eg:-  
