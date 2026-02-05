@@ -138,9 +138,9 @@ TZ=Asia/Shanghai
 username=setyourusername
 password=setyourpassword
 ```
-- There is a permission mismatch so after you run the compose first it will error out after creating the `./Suwayomi/data` dir. If this happens You will need to do  
+- There is a permission mismatch so after you run the compose for the first time it will error out after creating the `./suwayomi/data` dir. If this happens You will need to do  
 ```
-sudo chown -R "$USER":"$USER" ./Suwayomi
+sudo chown -R "$USER":"$USER" ./suwayomi
 ```
 And restart the docker so proper files can be created.
 - Access url  
