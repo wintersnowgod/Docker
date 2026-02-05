@@ -117,6 +117,21 @@ http://localhost:8384
 - For any additional info refer to  
 https://github.com/syncthing/syncthing  
 
+## Suwayomi
+- It is a webapp to read manga like mihon. It uses mihon extensions.  
+- env variables for .env file in my setup  
+```
+TZ=Asia/Shanghai
+username=setyourusername
+password=setyourpassword
+```
+- Access url  
+http://localhost:4567  
+- For additional info refer to  
+https://github.com/Suwayomi/Suwayomi-Server-docker  
+  
+```
+```
 ## Syncyomi
 - It is a application to sync your Tachiyomi/Mihon and their forks library cross device if supported.  
 - set `TZ` env variable in .env file eg:-  
