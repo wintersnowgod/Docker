@@ -125,6 +125,10 @@ TZ=Asia/Shanghai
 username=setyourusername
 password=setyourpassword
 ```
+- You might need to do  
+```
+sudo chown -R "$USER":"$USER" ./Suwayomi
+```
 - Access url  
 http://localhost:4567  
 - For additional info refer to  
