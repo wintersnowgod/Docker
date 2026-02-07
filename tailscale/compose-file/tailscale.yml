@@ -3,8 +3,8 @@ services:
     container_name: ts-example
     hostname: example
     image: tailscale/tailscale:latest
-    ports:
-      - porttomake:portofservice #port for the webapp or service connected to tailscale to expose on localhost:port. the "portofservice" is the port of the actual app like searxng has port 8080 by default. the "porttomake" is the port you want it to be in. So if you set 8181:8080 then the searxng will be accessable in http://localhost:8181 instead of the default http://localhost:8080
+    # ports:
+    # - 81:80 #If you want to expose a port to localhost to access it eg:- http://localhost:81
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY} #create a .env file on the dir where this yml is and assign TS_AUTHKEY=yourauthkey there
       - TS_STATE_DIR=/var/lib/tailscale
@@ -12,10 +12,11 @@ services:
       - TS_EXTRA_ARGS=--advertise-exit-node
       - TS_USERSPACE=false
     volumes:
-      - ${TS_STATE_DIR}:/var/lib/tailscale #Inside the directiory of the example so it doesnot conflict with others. You can have it ./tailscale/state if you are going to run only one tailscale docker
+      - ${TS_STATE_DIR}:/var/lib/tailscale
       - ${TS_CONFIG_DIR}:/config #this is where you will keep your serve configs
     devices:
       - /dev/net/tun:/dev/net/tun
     cap_add:
       - net_admin
     restart: unless-stopped
+

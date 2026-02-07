@@ -13,13 +13,9 @@ TS_AUTHKEY=yourauthkey
 TS_STATE_DIR=./example/tailscale/state
 TS_CONFIG_DIR=./tailscale/config
 TS_SERVE_CONFIG=
-porttomake=
-portofservice=
-#port* are for the webapp or service connected to tailscale to expose on localhost:port. the "portofservice" is the port of the actual app. 
-#like searxng has port 8080 by default. the "porttomake" is the port you want it to be in. 
-#So if you set 8181:8080 then the searxng will be accessable in http://localhost:8181 instead of the default http://localhost:8080
 ```
-- Also add the compose of other service in the same file as the tailscale compose file.  
+- If you want to pair it with a service you can copy the content of this file to that yml and set `network_mode: service:ts-example`
+- In the tailscale.yml file replace `example` lines with the tailscale service you will use this together with.
 - and rename the file accordingly  
 eg:- if using tailscale for the searxng then add searxng compose contents in the tailscale compose file and rename the file as ts-searxng.yaml  
 - replace the word `example` everywhere with the service name for example:- searxng  
