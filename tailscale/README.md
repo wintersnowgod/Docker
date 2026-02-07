@@ -15,10 +15,11 @@ TS_CONFIG_DIR=./tailscale/config
 TS_SERVE_CONFIG=
 ```
 - If you want to pair it with a service you can copy the content of this file to that yml and set `network_mode: service:ts-example`
-- In the tailscale.yml file replace `example` lines with the tailscale service you will use this together with.
+- In the tailscale.yml file replace `example` lines with the tailscale service you will use this together with.  
 - and rename the file accordingly  
 eg:- if using tailscale for the searxng then add searxng compose contents in the tailscale compose file and rename the file as ts-searxng.yaml  
 - replace the word `example` everywhere with the service name for example:- searxng  
+- And add `network_mode: service:ts-example` in the searxng service so they are in same network
 - Run with  
 `docker compose -f ts-searxng.yaml -p ts-searxng up -d`  
 - To stop the container  
