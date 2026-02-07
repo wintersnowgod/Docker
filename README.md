@@ -114,6 +114,13 @@ and also uncomment `FTLCONF_webserver_port: ${port}` line and set the `port` env
 ```
 ip addr show docker0 | grep inet | awk '{print $2}' | sed 's|/.*||'
 ```
+- About hwaccel.ml and hwaccel.trannscoding  
+- If you dont want to use hwaccel.ml and hwaccel.transcoding then in pihole.yml search for the 2 `extends:` line and comment them and their contents.  
+- If you want to use hwaccel.ml and hwaccel.transcoding then uncomment the 2 `extends:` line in pihole.yml and in the `service:` line change the content to your hardware as directed in their comment respectively.  
+- REMEMBER THAT THEY ARE HARDWARE DEPENDENT SO CHECK THE OFFICIAL GUIDE FOR WHAT THEY SHOULD BE SET TO:  
+https://docs.immich.app/features/ml-hardware-acceleration/  
+https://docs.immich.app/features/hardware-transcoding/  
+- The two yml file dont need to be edited only pihole.yml need to be edited normally.  
 - You can access the control dashboard through  
 http://localhost:84  
 - For any additional info refer to  
