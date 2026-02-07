@@ -23,6 +23,6 @@ and also uncomment `FTLCONF_webserver_port: ${port}` line and set the `port` env
 ip addr show docker0 | grep inet | awk '{print $2}' | sed 's|/.*||'
 ```
 - You can access the control dashboard through  
-http://localhost:84  
+http://localhost:84/admin  
 - For any additional info refer to  
 https://github.com/pi-hole/docker-pi-hole/  
