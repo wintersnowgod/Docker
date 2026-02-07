@@ -23,6 +23,7 @@ services:
       FTLCONF_webserver_api_password: ${password}
       # If using Docker's default `bridge` network setting the dns listening mode should be set to 'ALL'
       FTLCONF_dns_listeningMode: "ALL"
+      FTLCONF_dns_upstreams: 8.8.8.8;8.8.4.4;2001:4860:4860:0:0:0:0:8888;2001:4860:4860:0:0:0:0:8844;9.9.9.10;149.112.112.10;2620:fe::10;2620:fe::fe:10;1.1.1.1;1.0.0.1;2606:4700:4700::1111;2606:4700:4700::1001
       # FTLCONF_webserver_port: ${port}
     # Volumes store your data between container upgrades
     volumes:
@@ -46,7 +47,7 @@ services:
     hostname: pihole
     image: tailscale/tailscale:latest
     ports:
-      - 84:80
+      - 84:80 #exposes your service in port for localhost
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY} #create a .env file on the dir where this yml is and assign TS_AUTHKEY=yourauthkey there
       - TS_STATE_DIR=/var/lib/tailscale
