@@ -19,7 +19,7 @@ TS_SERVE_CONFIG=
 - and rename the file accordingly  
 eg:- if using tailscale for the searxng then add searxng compose contents in the tailscale compose file and rename the file as ts-searxng.yaml  
 - replace the word `example` everywhere with the service name for example:- searxng  
-- And add `network_mode: service:ts-example` in the searxng service so they are in same network
+- And add `network_mode: service:ts-searxng` in the searxng service so they are in same network
 - Run with  
 `docker compose -f ts-searxng.yaml -p ts-searxng up -d`  
 - To stop the container  
