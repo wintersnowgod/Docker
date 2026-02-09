@@ -7,5 +7,5 @@
 - You can access the homarr homepage now in  
 http://localhost:7575    
 - For any additional info refer to  
-https://homarr.dev/docs/getting-started/installation/docker
+https://homarr.dev/docs/getting-started/installation/docker  
 https://github.com/homarr-labs/homarr  

@@ -7,5 +7,5 @@
 - You can access the dash homepage now in  
 http://localhost:3001  
 - For any additional info refer to  
-https://getdashdot.com/docs/installation/docker-compose
-https://github.com/MauriceNino/dashdot
+https://getdashdot.com/docs/installation/docker-compose  
+https://github.com/MauriceNino/dashdot  
