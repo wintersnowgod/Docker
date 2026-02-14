@@ -5,9 +5,9 @@
 TZ=Asia/Shanghai
 ```
 - Run with  
-`docker compose -f syncyomi.yaml -p syncyomi up -d`  
+`docker compose -f syncyomi.yml -p syncyomi up -d`  
 - To stop the container  
-`docker compose -f syncyomi.yaml -p syncyomi down`  
+`docker compose -f syncyomi.yml -p syncyomi down`  
 - and access it through  
 http://localhost:8282  
 - For any additional info refer to  

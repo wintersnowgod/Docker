@@ -1,4 +1,4 @@
-### My Docker Compose yaml files
+### My Docker Compose yml files
 - Install docker first.  
 - Read the individual explanation of the dockers provided inside their directories first as some might require additional configuration before starting them.  
 - A `.env` file for any compose you want to use and read the description for what env variables to set  

@@ -30,9 +30,9 @@ and also uncomment `FTLCONF_webserver_port: ${port}` line and set the `port` env
 ip addr show docker0 | grep inet | awk '{print $2}' | sed 's|/.*||'
 ```
 - Run with  
-`docker compose -f pihole.yaml -p pihole up -d`  
+`docker compose -f pihole.yml -p pihole up -d`  
 - To stop the container  
-`docker compose -f pihole.yaml -p pihole down` 
+`docker compose -f pihole.yml -p pihole down` 
 - You can access the control dashboard through  
 http://localhost:84/admin  
 - For any additional info refer to  

@@ -12,9 +12,9 @@ https://docs.immich.app/features/ml-hardware-acceleration/
 https://docs.immich.app/features/hardware-transcoding/  
 - The two yml file dont need to be edited only pihole.yml need to be edited normally.  
 - Run with  
-`docker compose -f immich.yaml -p immich up -d`  
+`docker compose -f immich.yml -p immich up -d`  
 - To stop the container  
-`docker compose -f immich.yaml -p immich down`  
+`docker compose -f immich.yml -p immich down`  
 - and access it through  
 http://localhost:2283  
 - For any additional info refer to  

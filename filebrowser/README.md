@@ -5,9 +5,9 @@ eg:-
 dir=/home
 ```  
 - Run with  
-`docker compose -f filebrowser.yaml -p filebrowser up -d`  
+`docker compose -f filebrowser.yml -p filebrowser up -d`  
 - To stop the container  
-`docker compose -f filebrowser.yaml -p filebrowser down`  
+`docker compose -f filebrowser.yml -p filebrowser down`  
 - and access it through  
 http://localhost:82  
 - For any additional info refer to  

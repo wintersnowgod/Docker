@@ -6,9 +6,9 @@ VAULTWARDEN_DOMAIN=https://yourdomain.domain
 TZ=Asia/Shanghai
 ```  
 - Run with  
-`docker compose -f vaultwarden.yaml -p vaultwarden up -d`  
+`docker compose -f vaultwarden.yml -p vaultwarden up -d`  
 - To stop the container  
-`docker compose -f vaultwarden.yaml -p vaultwarden down`  
+`docker compose -f vaultwarden.yml -p vaultwarden down`  
 - Access it with  
 http://localhost:81  
 - If you cant access it then you may need https for which you will need a domain and reverse proxy.  
