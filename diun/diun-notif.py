@@ -112,9 +112,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
             version = image.split(":")[-1] if ":" in image else "unknown"
 
             title = "Docker Image Update"
-            body = (
-                f"Update Available for Container: {container} -> new version: {version}"
-            )
+            body = f"Update Available for Container: {container} Image -> new version: {version}"
 
             try:
                 send_notification(
@@ -220,7 +218,7 @@ def main():
     else:
         print(f"Sound name: {args.sound_name}")
     print(
-        "Make sure the corresponding .desktop file exists for notifications to persist in notification history."
+        "Make sure the corresponding .desktop file exists if you want notifications to persist in notification history."
     )
     try:
         server.serve_forever()
