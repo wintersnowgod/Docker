@@ -31,6 +31,9 @@ services:
       #webhook
       - "DIUN_NOTIF_WEBHOOK_ENDPOINT=http://127.0.0.1:9999"
       - "DIUN_NOTIF_WEBHOOK_METHOD=POST"
+      #telegram
+      - "DIUN_NOTIF_TELEGRAM_TOKEN=${DIUN_NOTIF_TELEGRAM_TOKEN}"
+      - "DIUN_NOTIF_TELEGRAM_CHATIDS=${DIUN_NOTIF_TELEGRAM_CHATIDS}"
     labels:
       - "diun.enable=true" # if DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT is not set or false, manually add this label to each container you want to monitor
     restart: always

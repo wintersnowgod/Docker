@@ -15,8 +15,13 @@ DIUN_NOTIF_MAIL_USERNAME=
 DIUN_NOTIF_MAIL_PASSWORD=
 DIUN_NOTIF_MAIL_FROM=
 DIUN_NOTIF_MAIL_TO=                     #comma separated if multiple
+
+#for telegram notifications
+DIUN_NOTIF_TELEGRAM_TOKEN=
+DIUN_NOTIF_TELEGRAM_CHATIDS=
 ```
 - I have provided a diun-notif.py python script for webhook notification using dbus for host system ie to get the notifications in your pc itself. You can configure other like email (as in above env file) or discord or telegram etc. check in documentation below.  
+- For telegram you need TOKEN and CHATIDS and for Email all the stuffs in the env file i gave, so follow the instructions in the below links to get them and set it up. 
 - Run with  
 `docker compose -f diun.yml -p diun up -d`  
 - To stop the container  
