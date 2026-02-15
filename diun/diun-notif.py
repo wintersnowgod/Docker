@@ -112,7 +112,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
             version = image.split(":")[-1] if ":" in image else "unknown"
 
             title = "Docker Image Update"
-            body = f"Update Available for Container: {container} Image -> new version: {version}"
+            body = f"Update Available for Container Image: {container}:{version}"
 
             try:
                 send_notification(
