@@ -1,31 +1,136 @@
 #!/usr/bin/env bash
 
-cd "$(dirname "$(readlink -f "$0")")" || exit
-name=$1
-if [ -n "$name" ]; then
-  if docker ps --format '{{.Names}}' | grep -qw "$name"; then
-    file=$(find . -maxdepth 2 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
-    if [ -f "$file" ]; then
-      docker compose -f "$file" -p "$name" down
-      docker compose -f "$file" -p "$name" up -d
-    else
-      echo "File $name.yml/yaml not found."
-      exit 1
+cd "$(dirname "$(readlink -f "$0")")" || exit 1
+
+restartSkipped=()
+restartFailed=()
+restartSuccess=()
+
+# List of files to ignore (just the filename, not the path)
+ignoreFiles=("hwaccel.ml.yml" "hwaccel.transcoding.yml")
+
+isIgnored() {
+  local file="$1"
+  for ignore in "${ignoreFiles[@]}"; do
+    if [[ "$(basename "$file")" == "$ignore" ]]; then
+      return 0
     fi
+  done
+  return 1
+}
+
+isRunning() {
+  local composeFile="$1"
+  local containers
+  containers=$(docker compose -f "$composeFile" ps -q)
+  if [ -z "$containers" ]; then
+    return 1
+  fi
+
+  local failed=()
+  local running=()
+
+  for container in $containers; do
+    local state
+    state=$(docker inspect -f '{{.State.Running}}' "$container")
+    if [[ "$state" == "true" ]]; then
+      running+=("$container")
+    else
+      failed+=("$container")
+    fi
+  done
+
+  [[ ${#running[@]} -gt 0 ]] && return 0 || return 1
+}
+
+restartContainer() {
+  local composeFile="$1"
+
+  if isIgnored "$composeFile"; then
+    echo "Skipping ignored file: $composeFile"
+    return
+  fi
+
+  local projectName
+  projectName=$(basename "${composeFile%.*}" | tr '.' '_')
+
+  if ! isRunning "$composeFile"; then
+    echo "$projectName is not Running!!!"
+    restartSkipped+=("$composeFile")
+    return
+  fi
+
+  echo "=> Restarting $composeFile ..."
+
+  if docker compose -f "$composeFile" -p "$projectName" down &&
+    docker compose -f "$composeFile" -p "$projectName" up -d; then
+    restartSuccess+=("$composeFile")
   else
-    echo "Docker container $name not found"
+    restartFailed+=("$composeFile")
+  fi
+}
+
+if [ -n "$1" ]; then
+  composeFile=$(find . -maxdepth 2 -type f \( -name "$1.yml" -o -name "$1.yaml" \) | head -n 1)
+  if [ -f "$composeFile" ]; then
+    restartContainer "$composeFile"
+  else
+    echo "File $1.yml/yaml not found."
+    exit 1
   fi
 else
-  while read -r file; do
-    name=$(basename "${file%.*}")
-    docker compose -f "$file" -p "$name" down
-    docker compose -f "$file" -p "$name" up -d
+  while read -r composeFile; do
+    restartContainer "$composeFile"
+    echo
   done < <(find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \))
 fi
 
-restart_status=$?
-if [[ $restart_status -eq 0 ]]; then
-  echo "success!"
+if [ -n "$1" ]; then
+  if ((${#restartSkipped[@]})); then
+    echo
+    printf ' \033[1mℹ\033[0m Skipped (not running) %s\n' "${restartSkipped[@]}"
+  fi
+
+  if ((${#restartSuccess[@]})); then
+    echo
+    printf ' ✔ Successfully restarted %s\n' "${restartSuccess[@]}"
+  fi
+
+  if ((${#restartFailed[@]})); then
+    echo
+    printf ' ✘ Failed to restart %s\n' "${restartFailed[@]}"
+    exit 2
+  else
+    exit 0
+  fi
 else
-  echo "failure!"
+  echo
+  echo "===== SUMMARY ====="
+
+  if ((${#ignoreFiles[@]})); then
+    echo
+    echo "Ignored Files:"
+    printf ' \033[1mℹ\033[0m %s\n' "${ignoreFiles[@]}"
+  fi
+
+  if ((${#restartSkipped[@]})); then
+    echo
+    echo "Skipped (not running):"
+    printf ' \033[1mℹ\033[0m %s\n' "${restartSkipped[@]}"
+  fi
+
+  if ((${#restartSuccess[@]})); then
+    echo
+    echo "Successful restarts:"
+    printf ' ✔ %s\n' "${restartSuccess[@]}"
+  fi
+
+  if ((${#restartFailed[@]})); then
+    echo
+    echo "Failed restarts:"
+    printf ' ✘ %s\n' "${restartFailed[@]}"
+    exit 2
+  else
+    exit 0
+  fi
 fi

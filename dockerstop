@@ -1,25 +1,135 @@
 #!/usr/bin/env bash
 
-cd "$(dirname "$(readlink -f "$0")")" || exit
-name=$1
-if [ -n "$1" ]; then
-  file=$(find . -maxdepth 2 -type f \( -name "$name.yml" -o -name "$name.yaml" \) | head -n 1)
-  if [ -f "$file" ]; then
-    docker compose -f "$file" -p "$name" down
+cd "$(dirname "$(readlink -f "$0")")" || exit 1
+
+stopSkipped=()
+stopFailed=()
+stopSuccess=()
+
+# List of files to ignore (just the filename, not the path)
+ignoreFiles=("hwaccel.ml.yml" "hwaccel.transcoding.yml")
+
+isIgnored() {
+  local file="$1"
+  for ignore in "${ignoreFiles[@]}"; do
+    if [[ "$(basename "$file")" == "$ignore" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+isRunning() {
+  local composeFile="$1"
+  local containers
+  containers=$(docker compose -f "$composeFile" ps -q)
+  if [ -z "$containers" ]; then
+    return 1
+  fi
+
+  local failed=()
+  local running=()
+
+  for container in $containers; do
+    local state
+    state=$(docker inspect -f '{{.State.Running}}' "$container")
+    if [[ "$state" == "true" ]]; then
+      running+=("$container")
+    else
+      failed+=("$container")
+    fi
+  done
+
+  [[ ${#running[@]} -gt 0 ]] && return 0 || return 1
+}
+
+stopContainer() {
+  local composeFile="$1"
+
+  if isIgnored "$composeFile"; then
+    echo "Skipping ignored file: $composeFile"
+    return
+  fi
+
+  local projectName
+  projectName=$(basename "${composeFile%.*}" | tr '.' '_')
+
+  if ! isRunning "$composeFile"; then
+    echo "$projectName is not Running!!!"
+    stopSkipped+=("$composeFile")
+    return
+  fi
+
+  echo "=> Stopping $composeFile ..."
+
+  if docker compose -f "$composeFile" -p "$projectName" down; then
+    stopSuccess+=("$composeFile")
   else
-    echo "File $name.yml/yaml not found."
+    stopFailed+=("$composeFile")
+  fi
+}
+
+if [ -n "$1" ]; then
+  composeFile=$(find . -maxdepth 2 -type f \( -name "$1.yml" -o -name "$1.yaml" \) | head -n 1)
+  if [ -f "$composeFile" ]; then
+    stopContainer "$composeFile"
+  else
+    echo "File $1.yml/yaml not found."
     exit 1
   fi
 else
-  while read -r file; do
-    name=$(basename "${file%.*}")
-    docker compose -f "$file" -p "$name" down
+  while read -r composeFile; do
+    stopContainer "$composeFile"
+    echo
   done < <(find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \))
 fi
 
-stop_status=$?
-if [[ $stop_status -eq 0 ]]; then
-  echo "success!"
+if [ -n "$1" ]; then
+  if ((${#stopSkipped[@]})); then
+    echo
+    printf ' \033[1mℹ\033[0m Skipped (not running) %s\n' "${stopSkipped[@]}"
+  fi
+
+  if ((${#stopSuccess[@]})); then
+    echo
+    printf ' ✔ Successfully stopped %s\n' "${stopSuccess[@]}"
+  fi
+
+  if ((${#stopFailed[@]})); then
+    echo
+    printf ' ✘ Failed to stop %s\n' "${stopFailed[@]}"
+    exit 2
+  else
+    exit 0
+  fi
 else
-  echo "failure!"
+  echo
+  echo "===== SUMMARY ====="
+
+  if ((${#ignoreFiles[@]})); then
+    echo
+    echo "Ignored Files:"
+    printf ' \033[1mℹ\033[0m %s\n' "${ignoreFiles[@]}"
+  fi
+
+  if ((${#stopSkipped[@]})); then
+    echo
+    echo "Skipped (not running):"
+    printf ' \033[1mℹ\033[0m %s\n' "${stopSkipped[@]}"
+  fi
+
+  if ((${#stopSuccess[@]})); then
+    echo
+    echo "Successful stops:"
+    printf ' ✔ %s\n' "${stopSuccess[@]}"
+  fi
+
+  if ((${#stopFailed[@]})); then
+    echo
+    echo "Failed stops:"
+    printf ' ✘ %s\n' "${stopFailed[@]}"
+    exit 2
+  else
+    exit 0
+  fi
 fi
