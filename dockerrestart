@@ -16,11 +16,11 @@ if [ -n "$name" ]; then
     echo "Docker container $name not found"
   fi
 else
-  find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \) | while read -r file; do
+  while read -r file; do
     name=$(basename "${file%.*}")
     docker compose -f "$file" -p "$name" down
     docker compose -f "$file" -p "$name" up -d
-  done
+  done < <(find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \))
 fi
 
 restart_status=$?

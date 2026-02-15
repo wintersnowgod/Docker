@@ -11,10 +11,10 @@ if [ -n "$1" ]; then
     exit 1
   fi
 else
-  find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \) | while read -r file; do
+  while read -r file; do
     name=$(basename "${file%.*}")
     docker compose -f "$file" -p "$name" up -d
-  done
+  done < <(find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \))
 fi
 
 start_status=$?
