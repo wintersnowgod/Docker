@@ -14,6 +14,7 @@ services:
       - "DIUN_WATCH_SCHEDULE=0 */6 * * *"
       - "DIUN_WATCH_JITTER=30s"
       - "DIUN_PROVIDERS_DOCKER=true"
+      - "DIUN_WATCH_FIRSTCHECKNOTIF=true"
       - "DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true" #needed to scan all the images in docker
       #Notification
       ##Mail SMTP
