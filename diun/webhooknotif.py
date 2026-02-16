@@ -37,7 +37,7 @@ DEFAULT_APP_NAME = "Webhook"
 DEFAULT_ICON = "preferences-desktop-notification"
 DEFAULT_TIMEOUT = 5000  # milliseconds
 DEFAULT_URGENCY = "normal"
-DEFAULT_DESKTOP_ENTRY = "com.github.wintersnowgod.webhooknotif"
+DEFAULT_DESKTOP_ENTRY = "webhooknotif"
 DEFAULT_NOTIFICATION_SOUND = "dialog-information"
 
 # Urgency mapping (string -> int)
@@ -85,6 +85,42 @@ def send_notification(
         hints,  # hints
         timeout,  # timeout
     )
+
+
+def ensure_desktop_file(desktop_entry):
+    """
+    Create a .desktop file for the given desktop entry name if it doesn't exist.
+    The file is created in ~/.local/share/applications/.
+    """
+    home = os.path.expanduser("~")
+    apps_dir = os.path.join(home, ".local", "share", "applications")
+    desktop_path = os.path.join(apps_dir, f"{desktop_entry}.desktop")
+
+    if os.path.exists(desktop_path):
+        logging.debug(f"Desktop file already exists: {desktop_path}")
+        return
+
+    # Ensure the applications directory exists
+    try:
+        os.makedirs(apps_dir, exist_ok=True)
+    except OSError as e:
+        logging.error(f"Failed to create directory {apps_dir}: {e}")
+        return
+
+    # Desktop entry content
+    content = f"""[Desktop Entry]
+Type=Application
+Name=Webhook Notifier
+Comment=Receive webhook notifications and display them via D-Bus
+Icon={DEFAULT_ICON}
+NoDisplay=true
+"""
+    try:
+        with open(desktop_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        logging.info(f"Created desktop file: {desktop_path}")
+    except OSError as e:
+        logging.error(f"Failed to write desktop file {desktop_path}: {e}")
 
 
 class WebhookHandler(BaseHTTPRequestHandler):
@@ -173,14 +209,16 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 urgency = self.urgency_int
 
             desktop_entry = payload.get("desktop_entry", self.desktop_entry)
-            notification_sound = payload.get("notification_sound", self.notification_sound)
+            notification_sound = payload.get(
+                "notification_sound", self.notification_sound
+            )
 
         if title and body:
             try:
                 sound_name = None
                 sound_file = None
                 if notification_sound:
-                    if '/' in notification_sound:
+                    if "/" in notification_sound:
                         sound_file = notification_sound
                     else:
                         sound_name = notification_sound
@@ -197,7 +235,11 @@ class WebhookHandler(BaseHTTPRequestHandler):
                     sound_file=sound_file,
                 )
 
-                sound_info = f" (Notification Sound: {notification_sound})" if notification_sound else ""
+                sound_info = (
+                    f" (Notification Sound: {notification_sound})"
+                    if notification_sound
+                    else ""
+                )
                 logging.info(f"Notification sent{sound_info}: {title} - {body}")
             except Exception as e:
                 logging.error(f"D‑Bus error: {e}")
@@ -276,6 +318,8 @@ Note:
 
     args = parser.parse_args()
 
+    ensure_desktop_file(DEFAULT_DESKTOP_ENTRY)
+
     server = HTTPServer((args.baseurl, args.port), WebhookHandler)
     logging.info(f"Listening on {args.baseurl}:{args.port}...")
     logging.info(f"App name: {DEFAULT_APP_NAME}")
@@ -283,7 +327,9 @@ Note:
     logging.info(f"Timeout: {DEFAULT_TIMEOUT} ms")
     logging.info(f"Urgency: {DEFAULT_URGENCY} ({URGENCY_MAP[DEFAULT_URGENCY]})")
     logging.info(f"Desktop entry: {DEFAULT_DESKTOP_ENTRY}")
-    logging.info(f"Notification sound: {DEFAULT_NOTIFICATION_SOUND} (interpreted as {'file' if '/' in DEFAULT_NOTIFICATION_SOUND else 'themed name'})")
+    logging.info(
+        f"Notification sound: {DEFAULT_NOTIFICATION_SOUND} (interpreted as {'file' if '/' in DEFAULT_NOTIFICATION_SOUND else 'themed name'})"
+    )
     logging.info(
         "Make sure the corresponding .desktop file exists if you want notifications to persist in notification history."
     )
