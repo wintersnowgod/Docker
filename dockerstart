@@ -2,9 +2,18 @@
 
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
+declare -A postStartScripts
+postStartScripts=(
+  ["diun.yml"]="webhooknotif.py --port 9999"
+  # Add more mappings as needed:
+  # ["other.yml"]="echo 'Container started'"
+)
+
 startSkipped=()
 startFailed=()
 startSuccess=()
+startPostStartScriptSuccess=()
+startPostStartScriptFailed=()
 
 # List of files to ignore (just the filename, not the path)
 ignoreFiles=("hwaccel.ml.yml" "hwaccel.transcoding.yml")
@@ -43,6 +52,41 @@ isRunning() {
   [[ ${#running[@]} -gt 0 ]] && return 0 || return 1
 }
 
+startScript() {
+  local composeFile="$1"
+  local composeFileBasename
+  composeFileBasename=$(basename "$composeFile")
+  if [[ -n "${postStartScripts[$composeFileBasename]}" ]]; then
+    local postStartScript="${postStartScripts[$composeFileBasename]}"
+    local postStartScriptBase="${postStartScript%% *}"
+    local postStartScriptArgs="${postStartScript#* }"
+    if [[ "$postStartScriptArgs" == "$postStartScript" ]]; then
+      postStartScriptArgs=""
+    fi
+
+    local postStartScriptName
+    postStartScriptName=$(find . -maxdepth 2 -type f -name "$postStartScriptBase" -print -quit)
+
+    if [[ -n "$postStartScriptName" ]]; then
+      echo "   Found script at: $postStartScriptName"
+      chmod +x "$postStartScriptName"
+      echo "   Running: $postStartScriptName $postStartScriptArgs"
+      if
+        nohup "$postStartScriptName" $postStartScriptArgs >/dev/null 2>&1 &
+        disown
+      then
+        startPostStartScriptSuccess+=("$postStartScriptName $postStartScriptArgs")
+      else
+        echo "  Failed to start $postStartScriptBase $postStartScriptArgs"
+        startPostStartScriptFailed+=("$postStartScriptBase $postStartScriptArgs")
+      fi
+    else
+      echo "   Warning: Could not find $postStartScriptBase within maxdepth 2. Skipping."
+      startPostStartScriptFailed+=("$postStartScriptBase $postStartScriptArgs")
+    fi
+  fi
+}
+
 startContainer() {
   local composeFile="$1"
 
@@ -63,6 +107,7 @@ startContainer() {
   echo "=> Starting $composeFile ..."
 
   if docker compose -f "$composeFile" -p "$projectName" up -d; then
+    startScript "$composeFile"
     startSuccess+=("$composeFile")
   else
     startFailed+=("$composeFile")
@@ -74,7 +119,7 @@ if [ -n "$1" ]; then
   if [ -f "$composeFile" ]; then
     startContainer "$composeFile"
   else
-    echo -e "\nFile $1.yml/yaml not found."
+    echo "File $1.yml/yaml not found."
     exit 1
   fi
 else
@@ -95,9 +140,20 @@ if [ -n "$1" ]; then
     printf ' ✔ Successfully started %s\n' "${startSuccess[@]}"
   fi
 
-  if ((${#startFailed[@]})); then
+  if ((${#startPostStartScriptSuccess[@]})); then
     echo
-    printf ' ✘ Failed to start %s\n' "${startFailed[@]}"
+    printf ' ✔ Successfully started script %s\n' "${startPostStartScriptSuccess[@]}"
+  fi
+
+  if ((${#startFailed[@]})) || ((${#startPostStartScriptFailed[@]})); then
+    if ((${#startFailed[@]})); then
+      echo
+      printf ' ✘ Failed to start %s\n' "${startFailed[@]}"
+    fi
+    if ((${#startPostStartScriptFailed[@]})); then
+      echo
+      printf ' ✘ Failed to start script %s\n' "${startPostStartScriptFailed[@]}"
+    fi
     exit 2
   else
     exit 0
@@ -124,10 +180,23 @@ else
     printf ' ✔ %s\n' "${startSuccess[@]}"
   fi
 
-  if ((${#startFailed[@]})); then
+  if ((${#startPostStartScriptSuccess[@]})); then
     echo
-    echo "Failed starts:"
-    printf ' ✘ %s\n' "${startFailed[@]}"
+    echo "Successful script starts:"
+    printf ' ✔ %s\n' "${startPostStartScriptSuccess[@]}"
+  fi
+
+  if ((${#startFailed[@]})) || ((${#startPostStartScriptFailed[@]})); then
+    if ((${#startFailed[@]})); then
+      echo
+      echo "Failed starts:"
+      printf ' ✘ %s\n' "${startFailed[@]}"
+    fi
+    if ((${#startPostStartScriptFailed[@]})); then
+      echo
+      echo "Failed script starts:"
+      printf ' ✘ %s\n' "${startPostStartScriptFailed[@]}"
+    fi
     exit 2
   else
     exit 0

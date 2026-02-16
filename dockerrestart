@@ -2,9 +2,21 @@
 
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
+declare -A postStartScripts
+postStartScripts=(
+  ["diun.yml"]="webhooknotif.py --port 9999"
+  # Add more mappings as needed:
+  # ["other.yml"]="echo 'Container started'"
+)
+
 restartSkipped=()
 restartFailed=()
 restartSuccess=()
+
+stopPostStartScriptSuccess=()
+stopPostStartScriptFailed=()
+startPostStartScriptSuccess=()
+startPostStartScriptFailed=()
 
 # List of files to ignore (just the filename, not the path)
 ignoreFiles=("hwaccel.ml.yml" "hwaccel.transcoding.yml")
@@ -43,6 +55,73 @@ isRunning() {
   [[ ${#running[@]} -gt 0 ]] && return 0 || return 1
 }
 
+stopScript() {
+  local composeFile="$1"
+  local composeFileBasename
+  composeFileBasename=$(basename "$composeFile")
+  if [[ -n "${postStartScripts[$composeFileBasename]}" ]]; then
+    local postStartScript="${postStartScripts[$composeFileBasename]}"
+    local postStartScriptBase="${postStartScript%% *}"
+    local postStartScriptArgs="${postStartScript#* }"
+    if [[ "$postStartScriptArgs" == "$postStartScript" ]]; then
+      postStartScriptArgs=""
+    fi
+
+    local postStartScriptName
+    postStartScriptName=$(find . -maxdepth 2 -type f -name "$postStartScriptBase" -print -quit)
+
+    if [[ -n "$postStartScriptName" ]]; then
+      echo "   Found script at: $postStartScriptName"
+      chmod +x "$postStartScriptName"
+      echo "   Stopping: $postStartScriptName $postStartScriptArgs"
+      if kill -9 $(pgrep -f "$postStartScriptName $postStartScriptArgs" 2>/dev/null) 2>/dev/null; then
+        stopPostStartScriptSuccess+=("$postStartScriptName $postStartScriptArgs")
+      else
+        echo "  Failed to stop $postStartScriptBase $postStartScriptArgs"
+        stopPostStartScriptFailed+=("$postStartScriptBase $postStartScriptArgs")
+      fi
+    else
+      echo "   Warning: Could not find $postStartScriptBase within maxdepth 2. Skipping."
+      stopPostStartScriptFailed+=("$postStartScriptBase $postStartScriptArgs")
+    fi
+  fi
+}
+
+startScript() {
+  local composeFile="$1"
+  local composeFileBasename
+  composeFileBasename=$(basename "$composeFile")
+  if [[ -n "${postStartScripts[$composeFileBasename]}" ]]; then
+    local postStartScript="${postStartScripts[$composeFileBasename]}"
+    local postStartScriptBase="${postStartScript%% *}"
+    local postStartScriptArgs="${postStartScript#* }"
+    if [[ "$postStartScriptArgs" == "$postStartScript" ]]; then
+      postStartScriptArgs=""
+    fi
+
+    local postStartScriptName
+    postStartScriptName=$(find . -maxdepth 2 -type f -name "$postStartScriptBase" -print -quit)
+
+    if [[ -n "$postStartScriptName" ]]; then
+      echo "   Found script at: $postStartScriptName"
+      chmod +x "$postStartScriptName"
+      echo "   Running: $postStartScriptName $postStartScriptArgs"
+      if
+        nohup "$postStartScriptName" $postStartScriptArgs >/dev/null 2>&1 &
+        disown
+      then
+        startPostStartScriptSuccess+=("$postStartScriptName $postStartScriptArgs")
+      else
+        echo "  Failed to start $postStartScriptBase $postStartScriptArgs"
+        startPostStartScriptFailed+=("$postStartScriptBase $postStartScriptArgs")
+      fi
+    else
+      echo "   Warning: Could not find $postStartScriptBase within maxdepth 2. Skipping."
+      startPostStartScriptFailed+=("$postStartScriptBase $postStartScriptArgs")
+    fi
+  fi
+}
+
 restartContainer() {
   local composeFile="$1"
 
@@ -62,8 +141,10 @@ restartContainer() {
 
   echo "=> Restarting $composeFile ..."
 
+  stopScript "$composeFile"
   if docker compose -f "$composeFile" -p "$projectName" down &&
     docker compose -f "$composeFile" -p "$projectName" up -d; then
+    startScript "$composeFile"
     restartSuccess+=("$composeFile")
   else
     restartFailed+=("$composeFile")
@@ -95,10 +176,29 @@ if [ -n "$1" ]; then
     echo
     printf ' ✔ Successfully restarted %s\n' "${restartSuccess[@]}"
   fi
-
-  if ((${#restartFailed[@]})); then
+  if ((${#stopPostStartScriptSuccess[@]})); then
     echo
-    printf ' ✘ Failed to restart %s\n' "${restartFailed[@]}"
+    printf ' ✔ Successfully stopped script %s\n' "${stopPostStartScriptSuccess[@]}"
+  fi
+
+  if ((${#startPostStartScriptSuccess[@]})); then
+    echo
+    printf ' ✔ Successfully started script %s\n' "${startPostStartScriptSuccess[@]}"
+  fi
+
+  if ((${#restartFailed[@]})) || ((${#stopPostStartScriptFailed[@]})) || ((${#startPostStartScriptFailed[@]})); then
+    if ((${#restartFailed[@]})); then
+      echo
+      printf ' ✘ Failed to restart %s\n' "${restartFailed[@]}"
+    fi
+    if ((${#stopPostStartScriptFailed[@]})); then
+      echo
+      printf ' ✘ Failed to stop script %s\n' "${stopPostStartScriptFailed[@]}"
+    fi
+    if ((${#startPostStartScriptFailed[@]})); then
+      echo
+      printf ' ✘ Failed to start script %s\n' "${startPostStartScriptFailed[@]}"
+    fi
     exit 2
   else
     exit 0
@@ -125,10 +225,34 @@ else
     printf ' ✔ %s\n' "${restartSuccess[@]}"
   fi
 
-  if ((${#restartFailed[@]})); then
+  if ((${#stopPostStartScriptSuccess[@]})); then
     echo
-    echo "Failed restarts:"
-    printf ' ✘ %s\n' "${restartFailed[@]}"
+    echo "Successful script stops:"
+    printf ' ✔ %s\n' "${stopPostStartScriptSuccess[@]}"
+  fi
+
+  if ((${#startPostStartScriptSuccess[@]})); then
+    echo
+    echo "Successful script starts:"
+    printf ' ✔ %s\n' "${startPostStartScriptSuccess[@]}"
+  fi
+
+  if ((${#restartFailed[@]})) || ((${#stopPostStartScriptFailed[@]})) || ((${#startPostStartScriptFailed[@]})); then
+    if ((${#restartFailed[@]})); then
+      echo
+      echo "Failed restarts:"
+      printf ' ✘ %s\n' "${restartFailed[@]}"
+    fi
+    if ((${#stopPostStartScriptFailed[@]})); then
+      echo
+      echo "Failed script stops:"
+      printf ' ✘ %s\n' "${stopPostStartScriptFailed[@]}"
+    fi
+    if ((${#startPostStartScriptFailed[@]})); then
+      echo
+      echo "Failed script starts:"
+      printf ' ✘ %s\n' "${startPostStartScriptFailed[@]}"
+    fi
     exit 2
   else
     exit 0
