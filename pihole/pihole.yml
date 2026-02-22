@@ -54,7 +54,7 @@ services:
       - TS_AUTHKEY=${TS_AUTHKEY} #create a .env file on the dir where this yml is and assign TS_AUTHKEY=yourauthkey there
       - TS_STATE_DIR=/var/lib/tailscale
       #- TS_SERVE_CONFIG=/config/example-serve.json #if you use serve change example-serve.json to your serve config file name and edit it as necessary. you can also see funnel there. Serve causes your service to be accessable by https on your tailscale network whereas funnel makes it accessable on the public internet via https. You can use either serve or funnel or both. Read more about it in tailscale docs.
-      - TS_EXTRA_ARGS=--advertise-exit-node
+      - TS_EXTRA_ARGS=--accept-dns=false --advertise-tags=tag:dns
       - TS_USERSPACE=false
     volumes:
       - ${TS_STATE_DIR}:/var/lib/tailscale
