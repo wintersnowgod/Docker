@@ -144,7 +144,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
         notification_sound = self.notification_sound
 
         if "diun_version" in payload:
-            if payload.get("status") == "new":
+            if payload.get("status") in ("new", "update"):
                 image = payload.get("image", "")
                 host = payload.get("hostname", "device")
 
