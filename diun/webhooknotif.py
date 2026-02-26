@@ -74,10 +74,10 @@ def send_notification(
     )
 
 
-def ensure_desktop_file(desktop_entry):
+def ensure_desktop_file(desktop_entry, icon=DEFAULT_ICON):
     """
     Create a .desktop file for the given desktop entry name if it doesn't exist.
-    The file is created in ~/.local/share/applications/.
+    The file is created in ~/.local/share/applications/ with the specified icon.
     """
     home = os.path.expanduser("~")
     apps_dir = os.path.join(home, ".local", "share", "applications")
@@ -94,18 +94,18 @@ def ensure_desktop_file(desktop_entry):
         logging.error(f"Failed to create directory {apps_dir}: {e}")
         return
 
-    # Desktop entry content
+    # Desktop entry content with dynamic icon
     content = f"""[Desktop Entry]
 Type=Application
 Name=Webhook Notifier
 Comment=Receive webhook notifications and display them via D-Bus
-Icon={DEFAULT_ICON}
+Icon={icon}
 NoDisplay=true
 """
     try:
         with open(desktop_path, "w", encoding="utf-8") as f:
             f.write(content)
-        logging.info(f"Created desktop file: {desktop_path}")
+        logging.info(f"Created desktop file: {desktop_path} with icon '{icon}'")
     except OSError as e:
         logging.error(f"Failed to write desktop file {desktop_path}: {e}")
 
@@ -165,8 +165,12 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 icon = "docker-desktop"
                 timeout = 5000
                 urgency = self.urgency_int
-                desktop_entry = self.desktop_entry
+                base_desktop = self.desktop_entry
+                safe_app = app_name.lower().replace(" ", "_")
+                desktop_entry = f"{base_desktop}-{safe_app}"
                 notification_sound = self.notification_sound
+
+                ensure_desktop_file(desktop_entry, icon)
 
             else:
                 logging.info("Ignored non‑new status")
@@ -195,10 +199,14 @@ class WebhookHandler(BaseHTTPRequestHandler):
             else:
                 urgency = self.urgency_int
 
-            desktop_entry = payload.get("desktop_entry", self.desktop_entry)
+            base_desktop = self.desktop_entry
+            safe_app = app_name.lower().replace(" ", "_")
+            desktop_entry = payload.get("desktop_entry", f"{base_desktop}-{safe_app}")
             notification_sound = payload.get(
                 "notification_sound", self.notification_sound
             )
+
+            ensure_desktop_file(desktop_entry, icon)
 
         if title and body:
             try:
@@ -305,7 +313,6 @@ Note:
 
     args = parser.parse_args()
 
-    ensure_desktop_file(DEFAULT_DESKTOP_ENTRY)
     safe_baseurl = args.baseurl.replace(":", "_")
     logfile = f"/tmp/webhook-{safe_baseurl}-{args.port}.log"
 
