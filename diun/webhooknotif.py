@@ -324,17 +324,6 @@ Note:
 
     server = HTTPServer((args.baseurl, args.port), WebhookHandler)
     logging.info(f"Listening on {args.baseurl}:{args.port}...")
-    logging.info(f"App name: {DEFAULT_APP_NAME}")
-    logging.info(f"Icon: {DEFAULT_ICON}")
-    logging.info(f"Timeout: {DEFAULT_TIMEOUT} ms")
-    logging.info(f"Urgency: {DEFAULT_URGENCY} ({URGENCY_MAP[DEFAULT_URGENCY]})")
-    logging.info(f"Desktop entry: {DEFAULT_DESKTOP_ENTRY}")
-    logging.info(
-        f"Notification sound: {DEFAULT_NOTIFICATION_SOUND} (interpreted as {'file' if '/' in DEFAULT_NOTIFICATION_SOUND else 'themed name'})"
-    )
-    logging.info(
-        "Make sure the corresponding .desktop file exists if you want notifications to persist in notification history."
-    )
 
     try:
         server.serve_forever()
