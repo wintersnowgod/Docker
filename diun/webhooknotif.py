@@ -11,19 +11,6 @@ import sys
 import argparse
 from http.server import ThreadingHTTPServer as HTTPServer, BaseHTTPRequestHandler
 
-logging.basicConfig(
-    filename="/tmp/webhooknotif.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-# Also log to console
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-console.setFormatter(formatter)
-logging.getLogger("").addHandler(console)
-
 try:
     import dbus
 except ImportError:
@@ -319,6 +306,21 @@ Note:
     args = parser.parse_args()
 
     ensure_desktop_file(DEFAULT_DESKTOP_ENTRY)
+    safe_baseurl = args.baseurl.replace(":", "_")
+    logfile = f"/tmp/webhook-{safe_baseurl}-{args.port}.log"
+
+    logging.basicConfig(
+        filename=logfile,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logging.getLogger("").addHandler(console)
+
+    logging.info(f"Logging to {logfile}")
 
     server = HTTPServer((args.baseurl, args.port), WebhookHandler)
     logging.info(f"Listening on {args.baseurl}:{args.port}...")
