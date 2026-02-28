@@ -87,7 +87,8 @@ stopScript() {
 
 startScript() {
   local composeFile="$1"
-  local composeFileBasename=$(basename "$composeFile")
+  local composeFileBasename
+  composeFileBasename=$(basename "$composeFile")
   if [[ -n "${postStartScripts[$composeFileBasename]}" ]]; then
     local postStartScript="${postStartScripts[$composeFileBasename]}"
     local postStartScriptBase="${postStartScript%% *}"
