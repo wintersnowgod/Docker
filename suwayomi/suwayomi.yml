@@ -36,7 +36,8 @@ services:
       - ./suwayomi/data:/home/suwayomi/.local/share/Tachidesk
     ports:
       - "4567:4567"
-    restart: on-failure:3
+    #restart: on-failure:3
+    restart: unless-stopped
 
   flaresolverr:
     image: ghcr.io/thephaseless/byparr:latest
@@ -45,7 +46,8 @@ services:
       - TZ=${TZ} # Use TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     restart: unless-stopped
 
-  vui3:
+  suwayomi-vui3:
+    container_name: suwayomi-vui3
     image: ghcr.io/suwayomi/suwayomi-vui
     # ports:
     #   - "9013:8080"
