@@ -37,5 +37,5 @@ services:
       - "DIUN_NOTIF_TELEGRAM_CHATIDS=${DIUN_NOTIF_TELEGRAM_CHATIDS}"
     labels:
       - "diun.enable=true" # if DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT is not set or false, manually add this label to each container you want to monitor
-    restart: always
+    restart: unless-stopped
     network_mode: host #required for webhook to send request on host machine
