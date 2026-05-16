@@ -22,7 +22,7 @@ services:
       #      - BIND_PORT=4567
       #      - SOCKS_PROXY_ENABLED=false
       - DOWNLOAD_AS_CBZ=true
-      - AUTH_MODE=simple_login
+      - AUTH_MODE=UI_LOGIN
       - AUTH_USERNAME=${username}
       - AUTH_PASSWORD=${password}
       #- EXTENSION_REPOS=["http://github.com/orginazation-name/repo-name", "http://github.com/orginazation-name-2/repo-name-2"]
