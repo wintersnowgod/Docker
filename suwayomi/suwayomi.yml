@@ -76,18 +76,18 @@ services:
       - TZ=${TZ:-Etc/UTC} # Use TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     restart: unless-stopped
 
-  suwayomi-vui3:
-    container_name: suwayomi-vui3
-    image: ghcr.io/suwayomi/suwayomi-vui
-    # ports:
-    #   - "9013:8080"
-    environment:
-      - suwayomi=http://suwayomi:4567/
-      # will proxy the suwayomi server to the UI
-      # if you plan on proxying it externally then this is unnecessary
-      - theme=wintry
-      # defaults to skeleton
-      # is for the SSR to stop off first loads
-      # any of the themes avalabe in VUI
-      # skeleton, wintry, crimson, gold-nouveau, hamlindigo, modern, rocket, sahara, seafoam, vintage
-    restart: unless-stopped
+  # suwayomi-vui3:
+  #   container_name: suwayomi-vui3
+  #   image: ghcr.io/suwayomi/suwayomi-vui
+  #   # ports:
+  #   #   - "9013:8080"
+  #   environment:
+  #     - suwayomi=http://suwayomi:4567/
+  #     # will proxy the suwayomi server to the UI
+  #     # if you plan on proxying it externally then this is unnecessary
+  #     - theme=wintry
+  #     # defaults to skeleton
+  #     # is for the SSR to stop off first loads
+  #     # any of the themes avalabe in VUI
+  #     # skeleton, wintry, crimson, gold-nouveau, hamlindigo, modern, rocket, sahara, seafoam, vintage
+  #   restart: unless-stopped
