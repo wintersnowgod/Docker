@@ -26,7 +26,7 @@ services:
       - AUTH_USERNAME=${username}
       - AUTH_PASSWORD=${password}
       #- EXTENSION_REPOS=["http://github.com/orginazation-name/repo-name", "http://github.com/orginazation-name-2/repo-name-2"]
-      - EXTENSION_REPOS=["https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json"]
+      - EXTENSION_REPOS=["https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json", "https://raw.githubusercontent.com/yuzono/cursed-manga-repo/repo/index.min.json"]
       - UPDATE_EXCLUDE_UNREAD=false
       - UPDATE_EXCLUDE_STARTED=false
       - UPDATE_EXCLUDE_COMPLETED=false
