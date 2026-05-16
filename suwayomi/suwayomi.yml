@@ -5,6 +5,11 @@ services:
     # user: 1000:1000
     environment:
       - TZ=${TZ} # Use TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      - DATABASE_TYPE=POSTGRESQL
+      - DATABASE_URL=postgresql://postgresql:5432/${POSTGRES_DB}
+      - DATABASE_USERNAME=${POSTGRES_USER}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # - USE_HIKARI_CONNECTION_POOL=false # Hikari Connection Pool can cause issues with some installations, but it is much more performant.
       # Comment these out if you do not use the flaresolverr container at the bottom of this file
       - FLARESOLVERR_ENABLED=true
       - FLARESOLVERR_URL=http://flaresolverr:8191
@@ -32,12 +37,36 @@ services:
       - UPDATE_EXCLUDE_COMPLETED=false
       - UPDATE_MANGA_INFO=true
       - WEB_UI_FLAVOR=WebUI # USE WebUI for default. VUI for the vui and Custom for others. To use custom replace Suwayomi/data/WebUI/ contents with other web ui you want to use
+    depends_on:
+      postgresql:
+        condition: service_healthy
+        restart: true
     volumes:
       - ./suwayomi/data:/home/suwayomi/.local/share/Tachidesk
     ports:
       - "4567:4567"
     #restart: on-failure:3
     restart: unless-stopped
+
+  postgresql:
+    image: postgres:18.3
+    container_name: swuwayomi-postgresql
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - PGDATA=/data/postgres
+      - POSTGRES_DB=${POSTGRES_DB}
+      - TZ=${TZ:-Etc/UTC}
+      - PGTZ=${TZ:-Etc/UTC}
+    volumes:
+      - ./suwayomi/postgres:/data/postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   flaresolverr:
     image: ghcr.io/thephaseless/byparr:latest
