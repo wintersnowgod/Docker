@@ -1,0 +1,420 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$(readlink -f "$0")")" || exit 1
+
+declare -A postStartScripts
+postStartScripts=(
+  ["diun.yml"]="webhooknotif.py --port 9999"
+  # Add more mappings as needed:
+  # ["other.yml"]="echo 'Container started'"
+)
+
+startSkipped=()
+startFailed=()
+startSuccess=()
+startPostStartScriptSuccess=()
+startPostStartScriptFailed=()
+
+stopSkipped=()
+stopFailed=()
+stopSuccess=()
+stopPostStartScriptSuccess=()
+stopPostStartScriptFailed=()
+stopPostStartScriptSkipped=()
+
+restartFailed=()
+restartSuccess=()
+
+updateFailed=()
+updateSuccess=()
+
+# List of files to ignore (just the filename, not the path)
+ignoreFiles=("hwaccel.ml.yml" "hwaccel.transcoding.yml")
+
+isIgnored() {
+  local file="$1"
+  for ignore in "${ignoreFiles[@]}"; do
+    if [[ "$(basename "$file")" == "$ignore" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+isRunning() {
+  local composeFile="$1"
+  local projectName
+  projectName=$(getProjectName "$composeFile")
+
+  local containers
+  containers=$(docker compose -f "$composeFile" -p "$projectName" ps -q)
+
+  [[ -z "$containers" ]] && return 1
+
+  local total=0
+  local running=0
+
+  for container in $containers; do
+    ((total++))
+
+    if [[ "$(docker inspect -f '{{.State.Running}}' "$container" 2>/dev/null)" == "true" ]]; then
+      ((running++))
+    fi
+  done
+
+  [[ $running -eq $total ]]
+}
+
+postStartScriptAction() {
+    local action="$1"
+    local composeFile="$2"
+
+    local composeFileBasename
+    composeFileBasename=$(basename "$composeFile")
+
+    [[ -z "${postStartScripts[$composeFileBasename]}" ]] && return
+
+    local postStartScript="${postStartScripts[$composeFileBasename]}"
+    local postStartScriptBase="${postStartScript%% *}"
+    local postStartScriptArgs=""
+    if [[ "$postStartScript" == *" "* ]]; then
+        postStartScriptArgs="${postStartScript#* }"
+    fi
+
+    local -a postStartScriptArgsArray=()
+    [[ -n "$postStartScriptArgs" ]] && read -r -a postStartScriptArgsArray <<< "$postStartScriptArgs"
+
+    local postStartScriptName
+    postStartScriptName=$(find . -maxdepth 2 -type f -name "$postStartScriptBase" -print -quit)
+
+    if [[ -z "$postStartScriptName" ]]; then
+        echo "   Warning: Could not find $postStartScriptBase within maxdepth 2. Skipping."
+
+        if [[ "$action" == "start" ]]; then
+            startPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
+        else
+            stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
+        fi
+        return
+    fi
+
+    echo "   Found script at: $postStartScriptName"
+    chmod +x "$postStartScriptName"
+
+    if [[ "$action" == "start" ]]; then
+        echo "   Running: $postStartScriptName $postStartScriptArgs"
+        nohup "$postStartScriptName" "${postStartScriptArgsArray[@]}" >/dev/null 2>&1 &
+        pid=$!
+
+        sleep 1
+
+        if kill -0 "$pid" 2>/dev/null; then
+            startPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
+        else
+            startPostStartScriptFailed+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
+        fi
+    else
+        echo "   Stopping: $postStartScriptName $postStartScriptArgs"
+
+        mapfile -t pids < <(pgrep -f "$postStartScriptName ${postStartScriptArgsArray[*]}")
+
+        if ((${#pids[@]})); then
+            if kill -9 "${pids[@]}"; then
+                stopPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
+            else
+                stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
+                return 1
+            fi
+        else
+            echo "Script was already stopped"
+            stopPostStartScriptSkipped+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
+        fi
+    fi
+}
+
+startScript() {
+    postStartScriptAction start "$1"
+}
+
+stopScript() {
+    postStartScriptAction stop "$1"
+}
+
+resolveComposeFile() {
+  local input="$1"
+
+  if [ -f "$input" ]; then
+    realpath "$input"
+    return
+  fi
+
+  if [[ "$input" =~ \.(yml|yaml)$ ]]; then
+    find . -maxdepth 2 -type f -name "$input" | head -n 1
+  else
+    find . -maxdepth 2 -type f \( -name "$input.yml" -o -name "$input.yaml" \) | head -n 1
+  fi
+}
+
+runComposeFiles() {
+  if [ -n "$1" ]; then
+    resolveComposeFile "$1"
+  else
+    find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \)
+  fi
+}
+
+getProjectName() {
+  basename "${1%.*}" | tr '.' '_'
+}
+
+runAction() {
+  local action="$1"
+  local composeFile="$2"
+
+  local projectName
+  projectName=$(getProjectName "$composeFile")
+
+  echo "=> $action $composeFile"
+
+  case "$action" in
+    start)
+      docker compose -f "$composeFile" -p "$projectName" up -d
+      return $?
+      ;;
+    stop)
+      docker compose -f "$composeFile" -p "$projectName" down
+      return $?
+      ;;
+    update)
+      docker compose -f "$composeFile" -p "$projectName" pull
+      return $?
+      ;;
+    status)
+      docker logs -f "$composeFile"
+      return $?
+    ;;
+  esac
+}
+
+processFile() {
+  local action="$1"
+  local composeFile="$2"
+  local projectName
+  projectName=$(getProjectName "$composeFile")
+
+  if isIgnored "$composeFile"; then
+    echo "Skipping ignored file: $composeFile"
+    return
+  fi
+
+  case "$action" in
+    start)
+      if isRunning "$composeFile"; then
+        echo "$projectName is already Running!!!"
+        startSkipped+=("$composeFile")
+      else
+        if runAction start "$composeFile"; then
+          startSuccess+=("$composeFile")
+          startScript "$composeFile"
+        else
+          startFailed+=("$composeFile")
+        fi
+      fi
+      ;;
+
+    stop)
+      if isRunning "$composeFile"; then
+        if runAction stop "$composeFile"; then
+          stopSuccess+=("$composeFile")
+          stopScript "$composeFile"
+        else
+          stopFailed+=("$composeFile")
+        fi
+      else
+        echo "$projectName is already Stopped!!!"
+        stopSkipped+=("$composeFile")
+      fi
+      ;;
+
+    restart)
+      if isRunning "$composeFile"; then
+        if runAction stop "$composeFile"; then
+          stopSuccess+=("$composeFile")
+          if ! stopScript "$composeFile"; then
+              restartFailed+=("$composeFile")
+              return 1
+          fi
+        else
+          stopFailed+=("$composeFile")
+          restartFailed+=("$composeFile")
+          return 1
+        fi
+      else
+        echo "$projectName is already Stopped!!!"
+        stopSkipped+=("$composeFile")
+      fi
+      if isRunning "$composeFile"; then
+        echo "$projectName is already Running!!!"
+        startSkipped+=("$composeFile")
+      else
+        if runAction start "$composeFile"; then
+          startSuccess+=("$composeFile")
+          startScript "$composeFile"
+        else
+          startFailed+=("$composeFile")
+          restartFailed+=("$composeFile")
+          return 1
+        fi
+      fi
+
+      if isRunning "$composeFile"; then
+          restartSuccess+=("$composeFile")
+      else
+          restartFailed+=("$composeFile")
+      fi
+      ;;
+
+    update)
+      if runAction update "$composeFile"; then
+          updateSuccess+=("$composeFile")
+          if isRunning "$composeFile"; then
+            if runAction stop "$composeFile"; then
+              stopSuccess+=("$composeFile")
+              if ! stopScript "$composeFile"; then
+                  restartFailed+=("$composeFile")
+                  return 1
+              fi
+            else
+              stopFailed+=("$composeFile")
+              restartFailed+=("$composeFile")
+              return 1
+            fi
+          else
+            echo "$projectName is already Stopped!!!"
+            stopSkipped+=("$composeFile")
+          fi
+          if isRunning "$composeFile"; then
+            echo "$projectName is already Running!!!"
+            startSkipped+=("$composeFile")
+          else
+            if runAction start "$composeFile"; then
+              startSuccess+=("$composeFile")
+              startScript "$composeFile"
+            else
+              startFailed+=("$composeFile")
+              restartFailed+=("$composeFile")
+              return 1
+            fi
+          fi
+      else
+        updateFailed+=("$composeFile")
+        return 1
+      fi
+
+      if isRunning "$composeFile"; then
+          restartSuccess+=("$composeFile")
+      else
+          restartFailed+=("$composeFile")
+      fi
+      ;;
+  esac
+}
+
+runMain() {
+  local action="$1"
+  shift
+
+  if [ $# -eq 0 ]; then
+    while read -r composeFile; do
+      echo
+      processFile "$action" "$composeFile"
+      echo
+    done < <(runComposeFiles)
+  else
+    for input in "$@"; do
+      while read -r composeFile; do
+        echo
+        processFile "$action" "$composeFile"
+        echo
+      done < <(runComposeFiles "$input")
+    done
+  fi
+
+  echo -e "\n===== SUMMARY ====="
+
+  ((${#ignoreFiles[@]})) && echo -e "\nIgnored Files:" && printf ' \033[1mℹ\033[0m %s\n' "${ignoreFiles[@]}"
+
+  case "$action" in
+    start)
+      ((${#startSkipped[@]})) && echo -e "\nSkipped:" && printf ' \033[1mℹ\033[0m Skipped (already running) %s\n' "${startSkipped[@]}"
+      ((${#startSuccess[@]})) && echo -e "\nStarted:" && printf '✔ Successfully started %s\n' "${startSuccess[@]}"
+      ((${#startFailed[@]})) && echo -e "\nFailed to Start:" && printf '✘ Failed to Start %s\n' "${startFailed[@]}"
+      ((${#startPostStartScriptSuccess[@]})) && echo -e "\nStarted Scripts:" && printf '✔ Successfully Started Script %s\n' "${startPostStartScriptSuccess[@]}"
+      ((${#startPostStartScriptFailed[@]})) && echo -e "\nFailed Script Starts:" && printf ' ✘ %s\n' "${startPostStartScriptFailed[@]}"
+      ;;
+    stop)
+      ((${#stopSkipped[@]})) && echo -e "\nSkipped:" && printf ' \033[1mℹ\033[0m Skipped (already stopped) %s\n' "${stopSkipped[@]}"
+      ((${#stopSuccess[@]})) && echo -e "\nStopped:" && printf '✔ Successfully stopped %s\n' "${stopSuccess[@]}"
+      ((${#stopFailed[@]})) && echo -e "\nFailed to Stop:" && printf '✘ Failed to stop %s\n' "${stopFailed[@]}"
+      ((${#stopPostStartScriptSuccess[@]})) && echo -e "\nStopped Scripts:" && printf '✔ Successfully Stopped Script %s\n' "${stopPostStartScriptSuccess[@]}"
+      ((${#stopPostStartScriptFailed[@]})) && echo -e "\nFailed Script Stops:" && printf ' ✘ %s\n' "${stopPostStartScriptFailed[@]}"
+      ((${#stopPostStartScriptSkipped[@]})) && echo -e "\nSkipped Script Stops:" && printf ' \033[1mℹ\033[0m  %s\n' "${stopPostStartScriptSkipped[@]}"
+      ;;
+    restart)
+      ((${#restartSuccess[@]})) && echo -e "\nRestarted:" && printf '✔ Successfully Restarted %s\n' "${restartSuccess[@]}"
+      ((${#restartFailed[@]})) && echo -e "\nFailed to Restart:" && printf ' ✘ Failed to Restart %s\n' "${restartFailed[@]}"
+      ;;
+    update)
+      ((${#updateSuccess[@]})) && echo -e "\nUpdated:" && printf '✔ Successfully Updated %s\n' "${updateSuccess[@]}"
+      ((${#updateFailed[@]})) && echo -e "\nFailed to Update:" && printf '✘ Failed to Update %s\n' "${updateFailed[@]}"
+      ((${#restartSuccess[@]})) && echo -e "\nRestarted:" && printf '✔ Successfully Restarted %s\n' "${restartSuccess[@]}"
+      ((${#restartFailed[@]})) && echo -e "\nFailed to Restart:" && printf ' ✘ Failed to Restart %s\n' "${restartFailed[@]}"
+      ;;
+  esac
+
+  if ((${#startFailed[@]})) || ((${#stopFailed[@]})) || ((${#updateFailed[@]})) || ((${#restartFailed[@]})) || ((${#startPostStartScriptFailed[@]})) || ((${#stopPostStartScriptFailed[@]})); then
+    exit 2
+  else
+    exit 0
+  fi
+}
+
+startMain()   { runMain start "$@"; }
+stopMain()    { runMain stop "$@"; }
+restartMain() { runMain restart "$@"; }
+updateMain()  { runMain update "$@"; }
+statusMain()  { runAction status "$@"; }
+
+helpMenu() {
+echo "dockerctl: A script to start, stop, restart and update docker containers and images through their compose files"
+echo
+echo "Example usage:"
+echo "  $(basename "$0") args path/to/docker-compose/.yml/file"
+echo "  $(basename "$0") args container_name"
+echo
+echo "args:"
+echo "  start                           starts the specified container"
+echo "  stop                            stops the specified container"
+echo "  restart                         restarts the specified container"
+echo "  update                          updates the images of the specified container"
+echo "  status                          shows the logs of the specified container"
+echo " --help / -h                      print the help menu"
+echo
+echo "NOTE: Needs docker compose .yml files either in current dir or provide the path to docker-compose .yml file as in example"
+echo "examples:"
+echo "  $(basename "$0") start vaultwarden"
+echo "  $(basename "$0") start /home/${USER}/vaultwarden.yml"
+echo
+echo "NOTE: You can use multiple compose.yml file separated by space (except for status arg. It shows log of 1st container name only)"
+echo "  $(basename "$0") args composefile1 composefile2 composefile3"
+}
+
+case "$1" in
+"start")  shift; startMain "$@";;
+"stop") shift; stopMain "$@";;
+"restart")  shift; restartMain "$@";;
+"update") shift; updateMain "$@";;
+"status") shift; statusMain "$@";;
+--help | -h) helpMenu;;
+*) helpMenu;;
+esac

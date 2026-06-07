@@ -6,7 +6,10 @@
 ```
 env=value
 ```
-- I have created a simple "dockerstart", "dockerstop" and "dockerrestart" script to easily start and stop all the dockers easily so you can also use that.   
+- I have created a simple "dockerctl" script to easily start, stop, restart, update and view the logs of all the dockers easily so you can also use that. see the command for more info  
+```  
+dockerctl --help
+```
 - I do not use any reverse proxy as of now and do not own a domain so i have not included any reverse proxy for the dockers.  
 - I use tailscale to access my services across devices.  
 - Note:- All I dont use the .yml files inside compose-file dir inside their directories anymore.
