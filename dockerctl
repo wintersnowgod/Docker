@@ -386,27 +386,27 @@ updateMain()  { runMain update "$@"; }
 statusMain()  { runAction status "$@"; }
 
 helpMenu() {
-echo "dockerctl: A script to start, stop, restart and update docker containers and images through their compose files"
+echo -e "dockerctl: A script to start, stop, restart and update docker containers and images through their compose files"
 echo
-echo "Example usage:"
-echo "  $(basename "$0") args path/to/docker-compose/.yml/file"
-echo "  $(basename "$0") args container_name"
+echo -e "Example usage:"
+echo -e "  $(basename "$0") args path/to/docker-compose/.yml/file"
+echo -e "  $(basename "$0") args container_name"
+echo -e
+echo -e "args:"
+echo -e "  start                           starts the specified compose file"
+echo -e "  stop                            stops the specified compose file"
+echo -e "  restart                         restarts the specified compose file"
+echo -e "  update                          updates all the images of the specified compose file. For individual images use 'docker pull imagename:tag'"
+echo -e "  status                          shows the logs of the specified container"
+echo -e " --help / -h                      print the help menu"
 echo
-echo "args:"
-echo "  start                           starts the specified container"
-echo "  stop                            stops the specified container"
-echo "  restart                         restarts the specified container"
-echo "  update                          updates the images of the specified container"
-echo "  status                          shows the logs of the specified container"
-echo " --help / -h                      print the help menu"
+echo -e "NOTE: Needs docker compose .yml files either in current dir or provide the path to docker-compose .yml file as in example"
+echo -e "examples:"
+echo -e "  $(basename "$0") start vaultwarden"
+echo -e "  $(basename "$0") start /home/${USER}/vaultwarden.yml"
 echo
-echo "NOTE: Needs docker compose .yml files either in current dir or provide the path to docker-compose .yml file as in example"
-echo "examples:"
-echo "  $(basename "$0") start vaultwarden"
-echo "  $(basename "$0") start /home/${USER}/vaultwarden.yml"
-echo
-echo "NOTE: You can use multiple compose.yml file separated by space (except for status arg. It shows log of 1st container name only)"
-echo "  $(basename "$0") args composefile1 composefile2 composefile3"
+echo -e "NOTE: You can use multiple compose.yml file separated by space (except for status arg. It shows log of 1st container name only)"
+echo -e "  $(basename "$0") args composefile1 composefile2 composefile3"
 }
 
 case "$1" in

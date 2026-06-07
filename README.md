@@ -6,7 +6,7 @@
 ```
 env=value
 ```
-- I have created a simple "dockerctl" script to easily start, stop, restart, update and view the logs of all the dockers easily so you can also use that. see the command for more info  
+- I have created a simple "dockerctl" script to easily start, stop, restart, update and view the logs of all the dockers so you can also use that. see the command for more info  
 ```  
 dockerctl --help
 ```
