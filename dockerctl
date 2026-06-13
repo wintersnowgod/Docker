@@ -66,78 +66,78 @@ isRunning() {
 }
 
 postStartScriptAction() {
-    local action="$1"
-    local composeFile="$2"
+  local action="$1"
+  local composeFile="$2"
 
-    local composeFileBasename
-    composeFileBasename=$(basename "$composeFile")
+  local composeFileBasename
+  composeFileBasename=$(basename "$composeFile")
 
-    [[ -z "${postStartScripts[$composeFileBasename]}" ]] && return
+  [[ -z "${postStartScripts[$composeFileBasename]}" ]] && return
 
-    local postStartScript="${postStartScripts[$composeFileBasename]}"
-    local postStartScriptBase="${postStartScript%% *}"
-    local postStartScriptArgs=""
-    if [[ "$postStartScript" == *" "* ]]; then
-        postStartScriptArgs="${postStartScript#* }"
-    fi
+  local postStartScript="${postStartScripts[$composeFileBasename]}"
+  local postStartScriptBase="${postStartScript%% *}"
+  local postStartScriptArgs=""
+  if [[ "$postStartScript" == *" "* ]]; then
+    postStartScriptArgs="${postStartScript#* }"
+  fi
 
-    local -a postStartScriptArgsArray=()
-    [[ -n "$postStartScriptArgs" ]] && read -r -a postStartScriptArgsArray <<< "$postStartScriptArgs"
+  local -a postStartScriptArgsArray=()
+  [[ -n "$postStartScriptArgs" ]] && read -r -a postStartScriptArgsArray <<<"$postStartScriptArgs"
 
-    local postStartScriptName
-    postStartScriptName=$(find . -maxdepth 2 -type f -name "$postStartScriptBase" -print -quit)
+  local postStartScriptName
+  postStartScriptName=$(find . -maxdepth 2 -type f -name "$postStartScriptBase" -print -quit)
 
-    if [[ -z "$postStartScriptName" ]]; then
-        echo "   Warning: Could not find $postStartScriptBase within maxdepth 2. Skipping."
-
-        if [[ "$action" == "start" ]]; then
-            startPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
-        else
-            stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
-        fi
-        return
-    fi
-
-    echo "   Found script at: $postStartScriptName"
-    chmod +x "$postStartScriptName"
+  if [[ -z "$postStartScriptName" ]]; then
+    echo "   Warning: Could not find $postStartScriptBase within maxdepth 2. Skipping."
 
     if [[ "$action" == "start" ]]; then
-        echo "   Running: $postStartScriptName $postStartScriptArgs"
-        nohup "$postStartScriptName" "${postStartScriptArgsArray[@]}" >/dev/null 2>&1 &
-        pid=$!
-
-        sleep 1
-
-        if kill -0 "$pid" 2>/dev/null; then
-            startPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
-        else
-            startPostStartScriptFailed+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
-        fi
+      startPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
     else
-        echo "   Stopping: $postStartScriptName $postStartScriptArgs"
-
-        mapfile -t pids < <(pgrep -f "$postStartScriptName ${postStartScriptArgsArray[*]}")
-
-        if ((${#pids[@]})); then
-            if kill -9 "${pids[@]}"; then
-                stopPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
-            else
-                stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
-                return 1
-            fi
-        else
-            echo "Script was already stopped"
-            stopPostStartScriptSkipped+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
-        fi
+      stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
     fi
+    return
+  fi
+
+  echo "   Found script at: $postStartScriptName"
+  chmod +x "$postStartScriptName"
+
+  if [[ "$action" == "start" ]]; then
+    echo "   Running: $postStartScriptName $postStartScriptArgs"
+    nohup "$postStartScriptName" "${postStartScriptArgsArray[@]}" >/dev/null 2>&1 &
+    pid=$!
+
+    sleep 1
+
+    if kill -0 "$pid" 2>/dev/null; then
+      startPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
+    else
+      startPostStartScriptFailed+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
+    fi
+  else
+    echo "   Stopping: $postStartScriptName $postStartScriptArgs"
+
+    mapfile -t pids < <(pgrep -f "$postStartScriptName ${postStartScriptArgsArray[*]}")
+
+    if ((${#pids[@]})); then
+      if kill -9 "${pids[@]}"; then
+        stopPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
+      else
+        stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
+        return 1
+      fi
+    else
+      echo "Script was already stopped"
+      stopPostStartScriptSkipped+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
+    fi
+  fi
 }
 
 startScript() {
-    postStartScriptAction start "$1"
+  postStartScriptAction start "$1"
 }
 
 stopScript() {
-    postStartScriptAction stop "$1"
+  postStartScriptAction stop "$1"
 }
 
 resolveComposeFile() {
@@ -177,21 +177,51 @@ runAction() {
   echo "=> $action $composeFile"
 
   case "$action" in
-    start)
-      docker compose -f "$composeFile" -p "$projectName" up -d
-      return $?
-      ;;
-    stop)
-      docker compose -f "$composeFile" -p "$projectName" down
-      return $?
-      ;;
-    update)
-      docker compose -f "$composeFile" -p "$projectName" pull
-      return $?
-      ;;
-    status)
-      docker logs -f "$composeFile"
-      return $?
+  start)
+    docker compose -f "$composeFile" -p "$projectName" up -d
+    return $?
+    ;;
+  stop)
+    docker compose -f "$composeFile" -p "$projectName" down
+    return $?
+    ;;
+  update)
+    docker compose -f "$composeFile" -p "$projectName" pull
+    return $?
+    ;;
+  status)
+    shift
+
+    local followLogs=false
+    local containerName=""
+
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+      -f)
+        followLogs=true
+        ;;
+      *)
+        if [[ -n "$containerName" ]]; then
+          echo "Error: status accepts only one container name"
+          return 1
+        fi
+        containerName="$1"
+        ;;
+      esac
+      shift
+    done
+
+    if [[ -z "$containerName" ]]; then
+      echo "Error: container name required"
+      return 1
+    fi
+
+    if $followLogs; then
+      docker logs -f "$containerName"
+    else
+      docker logs "$containerName"
+    fi
+    return $?
     ;;
   esac
 }
@@ -208,41 +238,81 @@ processFile() {
   fi
 
   case "$action" in
-    start)
-      if isRunning "$composeFile"; then
-        echo "$projectName is already Running!!!"
-        startSkipped+=("$composeFile")
+  start)
+    if isRunning "$composeFile"; then
+      echo "$projectName is already Running!!!"
+      startSkipped+=("$composeFile")
+    else
+      if runAction start "$composeFile"; then
+        startSuccess+=("$composeFile")
+        startScript "$composeFile"
       else
-        if runAction start "$composeFile"; then
-          startSuccess+=("$composeFile")
-          startScript "$composeFile"
-        else
-          startFailed+=("$composeFile")
-        fi
+        startFailed+=("$composeFile")
       fi
-      ;;
+    fi
+    ;;
 
-    stop)
-      if isRunning "$composeFile"; then
-        if runAction stop "$composeFile"; then
-          stopSuccess+=("$composeFile")
-          stopScript "$composeFile"
-        else
-          stopFailed+=("$composeFile")
+  stop)
+    if isRunning "$composeFile"; then
+      if runAction stop "$composeFile"; then
+        stopSuccess+=("$composeFile")
+        stopScript "$composeFile"
+      else
+        stopFailed+=("$composeFile")
+      fi
+    else
+      echo "$projectName is already Stopped!!!"
+      stopSkipped+=("$composeFile")
+    fi
+    ;;
+
+  restart)
+    if isRunning "$composeFile"; then
+      if runAction stop "$composeFile"; then
+        stopSuccess+=("$composeFile")
+        if ! stopScript "$composeFile"; then
+          restartFailed+=("$composeFile")
+          return 1
         fi
       else
-        echo "$projectName is already Stopped!!!"
-        stopSkipped+=("$composeFile")
+        stopFailed+=("$composeFile")
+        restartFailed+=("$composeFile")
+        return 1
       fi
-      ;;
+    else
+      echo "$projectName is already Stopped!!!"
+      stopSkipped+=("$composeFile")
+    fi
+    if isRunning "$composeFile"; then
+      echo "$projectName is already Running!!!"
+      startSkipped+=("$composeFile")
+    else
+      if runAction start "$composeFile"; then
+        startSuccess+=("$composeFile")
+        startScript "$composeFile"
+      else
+        startFailed+=("$composeFile")
+        restartFailed+=("$composeFile")
+        return 1
+      fi
+    fi
 
-    restart)
+    if isRunning "$composeFile"; then
+      restartSuccess+=("$composeFile")
+    else
+      restartFailed+=("$composeFile")
+    fi
+    ;;
+
+  update)
+    if runAction update "$composeFile"; then
+      updateSuccess+=("$composeFile")
       if isRunning "$composeFile"; then
         if runAction stop "$composeFile"; then
           stopSuccess+=("$composeFile")
           if ! stopScript "$composeFile"; then
-              restartFailed+=("$composeFile")
-              return 1
+            restartFailed+=("$composeFile")
+            return 1
           fi
         else
           stopFailed+=("$composeFile")
@@ -266,57 +336,17 @@ processFile() {
           return 1
         fi
       fi
+    else
+      updateFailed+=("$composeFile")
+      return 1
+    fi
 
-      if isRunning "$composeFile"; then
-          restartSuccess+=("$composeFile")
-      else
-          restartFailed+=("$composeFile")
-      fi
-      ;;
-
-    update)
-      if runAction update "$composeFile"; then
-          updateSuccess+=("$composeFile")
-          if isRunning "$composeFile"; then
-            if runAction stop "$composeFile"; then
-              stopSuccess+=("$composeFile")
-              if ! stopScript "$composeFile"; then
-                  restartFailed+=("$composeFile")
-                  return 1
-              fi
-            else
-              stopFailed+=("$composeFile")
-              restartFailed+=("$composeFile")
-              return 1
-            fi
-          else
-            echo "$projectName is already Stopped!!!"
-            stopSkipped+=("$composeFile")
-          fi
-          if isRunning "$composeFile"; then
-            echo "$projectName is already Running!!!"
-            startSkipped+=("$composeFile")
-          else
-            if runAction start "$composeFile"; then
-              startSuccess+=("$composeFile")
-              startScript "$composeFile"
-            else
-              startFailed+=("$composeFile")
-              restartFailed+=("$composeFile")
-              return 1
-            fi
-          fi
-      else
-        updateFailed+=("$composeFile")
-        return 1
-      fi
-
-      if isRunning "$composeFile"; then
-          restartSuccess+=("$composeFile")
-      else
-          restartFailed+=("$composeFile")
-      fi
-      ;;
+    if isRunning "$composeFile"; then
+      restartSuccess+=("$composeFile")
+    else
+      restartFailed+=("$composeFile")
+    fi
+    ;;
   esac
 }
 
@@ -345,31 +375,31 @@ runMain() {
   ((${#ignoreFiles[@]})) && echo -e "\nIgnored Files:" && printf ' \033[1mℹ\033[0m %s\n' "${ignoreFiles[@]}"
 
   case "$action" in
-    start)
-      ((${#startSkipped[@]})) && echo -e "\nSkipped:" && printf ' \033[1mℹ\033[0m Skipped (already running) %s\n' "${startSkipped[@]}"
-      ((${#startSuccess[@]})) && echo -e "\nStarted:" && printf '✔ Successfully started %s\n' "${startSuccess[@]}"
-      ((${#startFailed[@]})) && echo -e "\nFailed to Start:" && printf '✘ Failed to Start %s\n' "${startFailed[@]}"
-      ((${#startPostStartScriptSuccess[@]})) && echo -e "\nStarted Scripts:" && printf '✔ Successfully Started Script %s\n' "${startPostStartScriptSuccess[@]}"
-      ((${#startPostStartScriptFailed[@]})) && echo -e "\nFailed Script Starts:" && printf ' ✘ %s\n' "${startPostStartScriptFailed[@]}"
-      ;;
-    stop)
-      ((${#stopSkipped[@]})) && echo -e "\nSkipped:" && printf ' \033[1mℹ\033[0m Skipped (already stopped) %s\n' "${stopSkipped[@]}"
-      ((${#stopSuccess[@]})) && echo -e "\nStopped:" && printf '✔ Successfully stopped %s\n' "${stopSuccess[@]}"
-      ((${#stopFailed[@]})) && echo -e "\nFailed to Stop:" && printf '✘ Failed to stop %s\n' "${stopFailed[@]}"
-      ((${#stopPostStartScriptSuccess[@]})) && echo -e "\nStopped Scripts:" && printf '✔ Successfully Stopped Script %s\n' "${stopPostStartScriptSuccess[@]}"
-      ((${#stopPostStartScriptFailed[@]})) && echo -e "\nFailed Script Stops:" && printf ' ✘ %s\n' "${stopPostStartScriptFailed[@]}"
-      ((${#stopPostStartScriptSkipped[@]})) && echo -e "\nSkipped Script Stops:" && printf ' \033[1mℹ\033[0m  %s\n' "${stopPostStartScriptSkipped[@]}"
-      ;;
-    restart)
-      ((${#restartSuccess[@]})) && echo -e "\nRestarted:" && printf '✔ Successfully Restarted %s\n' "${restartSuccess[@]}"
-      ((${#restartFailed[@]})) && echo -e "\nFailed to Restart:" && printf ' ✘ Failed to Restart %s\n' "${restartFailed[@]}"
-      ;;
-    update)
-      ((${#updateSuccess[@]})) && echo -e "\nUpdated:" && printf '✔ Successfully Updated %s\n' "${updateSuccess[@]}"
-      ((${#updateFailed[@]})) && echo -e "\nFailed to Update:" && printf '✘ Failed to Update %s\n' "${updateFailed[@]}"
-      ((${#restartSuccess[@]})) && echo -e "\nRestarted:" && printf '✔ Successfully Restarted %s\n' "${restartSuccess[@]}"
-      ((${#restartFailed[@]})) && echo -e "\nFailed to Restart:" && printf ' ✘ Failed to Restart %s\n' "${restartFailed[@]}"
-      ;;
+  start)
+    ((${#startSkipped[@]})) && echo -e "\nSkipped:" && printf ' \033[1mℹ\033[0m Skipped (already running) %s\n' "${startSkipped[@]}"
+    ((${#startSuccess[@]})) && echo -e "\nStarted:" && printf '✔ Successfully started %s\n' "${startSuccess[@]}"
+    ((${#startFailed[@]})) && echo -e "\nFailed to Start:" && printf '✘ Failed to Start %s\n' "${startFailed[@]}"
+    ((${#startPostStartScriptSuccess[@]})) && echo -e "\nStarted Scripts:" && printf '✔ Successfully Started Script %s\n' "${startPostStartScriptSuccess[@]}"
+    ((${#startPostStartScriptFailed[@]})) && echo -e "\nFailed Script Starts:" && printf ' ✘ %s\n' "${startPostStartScriptFailed[@]}"
+    ;;
+  stop)
+    ((${#stopSkipped[@]})) && echo -e "\nSkipped:" && printf ' \033[1mℹ\033[0m Skipped (already stopped) %s\n' "${stopSkipped[@]}"
+    ((${#stopSuccess[@]})) && echo -e "\nStopped:" && printf '✔ Successfully stopped %s\n' "${stopSuccess[@]}"
+    ((${#stopFailed[@]})) && echo -e "\nFailed to Stop:" && printf '✘ Failed to stop %s\n' "${stopFailed[@]}"
+    ((${#stopPostStartScriptSuccess[@]})) && echo -e "\nStopped Scripts:" && printf '✔ Successfully Stopped Script %s\n' "${stopPostStartScriptSuccess[@]}"
+    ((${#stopPostStartScriptFailed[@]})) && echo -e "\nFailed Script Stops:" && printf ' ✘ %s\n' "${stopPostStartScriptFailed[@]}"
+    ((${#stopPostStartScriptSkipped[@]})) && echo -e "\nSkipped Script Stops:" && printf ' \033[1mℹ\033[0m  %s\n' "${stopPostStartScriptSkipped[@]}"
+    ;;
+  restart)
+    ((${#restartSuccess[@]})) && echo -e "\nRestarted:" && printf '✔ Successfully Restarted %s\n' "${restartSuccess[@]}"
+    ((${#restartFailed[@]})) && echo -e "\nFailed to Restart:" && printf ' ✘ Failed to Restart %s\n' "${restartFailed[@]}"
+    ;;
+  update)
+    ((${#updateSuccess[@]})) && echo -e "\nUpdated:" && printf '✔ Successfully Updated %s\n' "${updateSuccess[@]}"
+    ((${#updateFailed[@]})) && echo -e "\nFailed to Update:" && printf '✘ Failed to Update %s\n' "${updateFailed[@]}"
+    ((${#restartSuccess[@]})) && echo -e "\nRestarted:" && printf '✔ Successfully Restarted %s\n' "${restartSuccess[@]}"
+    ((${#restartFailed[@]})) && echo -e "\nFailed to Restart:" && printf ' ✘ Failed to Restart %s\n' "${restartFailed[@]}"
+    ;;
   esac
 
   if ((${#startFailed[@]})) || ((${#stopFailed[@]})) || ((${#updateFailed[@]})) || ((${#restartFailed[@]})) || ((${#startPostStartScriptFailed[@]})) || ((${#stopPostStartScriptFailed[@]})); then
@@ -379,42 +409,38 @@ runMain() {
   fi
 }
 
-startMain()   { runMain start "$@"; }
-stopMain()    { runMain stop "$@"; }
-restartMain() { runMain restart "$@"; }
-updateMain()  { runMain update "$@"; }
-statusMain()  { runAction status "$@"; }
-
 helpMenu() {
-echo -e "dockerctl: A script to start, stop, restart and update docker containers and images through their compose files"
-echo
-echo -e "Example usage:"
-echo -e "  $(basename "$0") args path/to/docker-compose/.yml/file"
-echo -e "  $(basename "$0") args container_name"
-echo -e
-echo -e "args:"
-echo -e "  start                           starts the specified compose file"
-echo -e "  stop                            stops the specified compose file"
-echo -e "  restart                         restarts the specified compose file"
-echo -e "  update                          updates all the images of the specified compose file. For individual images use 'docker pull imagename:tag'"
-echo -e "  status                          shows the logs of the specified container"
-echo -e " --help / -h                      print the help menu"
-echo
-echo -e "NOTE: Needs docker compose .yml files either in current dir or provide the path to docker-compose .yml file as in example"
-echo -e "examples:"
-echo -e "  $(basename "$0") start vaultwarden"
-echo -e "  $(basename "$0") start /home/${USER}/vaultwarden.yml"
-echo
-echo -e "NOTE: You can use multiple compose.yml file separated by space (except for status arg. It shows log of 1st container name only)"
-echo -e "  $(basename "$0") args composefile1 composefile2 composefile3"
+  echo -e "$(basename "$0"): A script to start, stop, restart and update docker containers and images through their compose files and view their logs."
+  echo
+  echo -e "Example usage:"
+  echo -e "  $(basename "$0") args path/to/docker-compose/.yml/file"
+  echo -e "  $(basename "$0") args containerName"
+  echo -e
+  echo -e "   Args         Subargs            Description"
+  echo -e "   start                           starts the specified compose file"
+  echo -e "   stop                            stops the specified compose file"
+  echo -e "   restart                         restarts the specified compose file"
+  echo -e "   update                          updates all the images of the specified compose file. For individual images use 'docker pull imagename:tag'"
+  echo -e "   status                          shows the logs of the specified container. Only accepts one container as arguement."
+  echo -e "               -f                  Used with status arg to follow the container logs."
+  echo -e "   --help/-h                       print the help menu"
+  echo
+  echo -e "NOTE: Needs docker compose .yml files either in current dir or provide the path to docker-compose .yml file as in example"
+  echo -e "examples:"
+  echo -e "  $(basename "$0") start vaultwarden"
+  echo -e "  $(basename "$0") start /home/${USER}/vaultwarden.yml"
+  echo
+  echo -e "status examples:"
+  echo -e "  $(basename "$0") status containerName"
+  echo -e "  $(basename "$0") status containerName -f"
+  echo
+  echo -e "NOTE: You can use multiple compose.yml file separated by space (except for status arg. It shows log of one container only)"
+  echo -e "  $(basename "$0") args composefile1 composefile2 composefile3"
 }
 
 case "$1" in
-"start")  shift; startMain "$@";;
-"stop") shift; stopMain "$@";;
-"restart")  shift; restartMain "$@";;
-"update") shift; updateMain "$@";;
-"status") shift; statusMain "$@";;
---help | -h) helpMenu;;
-*) helpMenu;;
+"start" | "stop" | "restart" | "update") runMain "$@" ;;
+"status") runAction "$@" ;;
+--help | -h) helpMenu ;;
+*) helpMenu ;;
 esac
