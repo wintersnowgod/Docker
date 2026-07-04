@@ -9,3 +9,9 @@ services:
       - ./vaultwarden/vw-data/:/data/
     ports:
       - 81:80
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=vaultwarden"
+      - "docktail.service.port=80"
+      - "docktail.service.service-port=443"
+      - "docktail.tags=tag:doctail"

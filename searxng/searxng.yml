@@ -36,3 +36,9 @@ services:
       options:
         max-size: "1m"
         max-file: "1"
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=searxng"
+      - "docktail.service.port=8080"
+      - "docktail.service.service-port=443"
+      - "docktail.tags=tag:doctail"

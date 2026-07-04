@@ -16,3 +16,9 @@ services:
       interval: 1m
       timeout: 10s
       retries: 3
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=syncthing"
+      - "docktail.service.port=8384"
+      - "docktail.service.service-port=443"
+      - "docktail.tags=tag:doctail"

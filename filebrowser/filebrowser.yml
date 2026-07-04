@@ -9,3 +9,9 @@ services:
       - ./filebrowser/database:/database
       - ./filebrowser/config:/config
     restart: unless-stopped
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=filebrowser"
+      - "docktail.service.port=80"
+      - "docktail.service.service-port=443"
+      - "docktail.tags=tag:doctail"

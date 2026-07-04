@@ -59,6 +59,12 @@ services:
       - "4567:4567"
     #restart: on-failure:3
     restart: unless-stopped
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=suwayomi"
+      - "docktail.service.port=4567"
+      - "docktail.service.service-port=443"
+      - "docktail.tags=tag:doctail"
 
   postgresql:
     image: postgres:18.4
