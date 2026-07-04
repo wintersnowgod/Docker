@@ -8,6 +8,9 @@ password=setyourpassword
 POSTGRES_USER=setyourusername
 POSTGRES_PASSWORD=setyourpassword
 POSTGRES_DB=suwayomi
+#syncyomi
+SYNCYOMI_HOST=yoursyncyomiurl
+SYNCYOMI_API_KEY=yoursyncyomiapikey
 ```
 - If you dont want to run as `user:root` in the compose file, there is a permission mismatch so after you run the compose for the first time it will error out after creating the `./suwayomi/data` dir. If this happens You will need to do  
 ```

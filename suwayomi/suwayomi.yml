@@ -34,8 +34,8 @@ services:
       - EXTENSION_STORES=["https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.pb", "https://raw.githubusercontent.com/yuzono/cursed-manga-repo/repo/index.min.json"]
       #SyncYomi
       - SYNCYOMI_ENABLED=true
-      - SYNCYOMI_HOST=http://localhost:8282
-      - SYNCYOMI_API_KEY=58c7a2de760312d117bbdc17444e5627
+      - SYNCYOMI_HOST=${SYNCYOMI_HOST}
+      - SYNCYOMI_API_KEY=${SYNCYOMI_API_KEY}
       - SYNC_DATA_MANGA=true
       - SYNC_DATA_CHAPTERS=true
       - SYNC_DATA_TRACKING=true
