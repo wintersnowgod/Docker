@@ -30,8 +30,8 @@ services:
       - AUTH_MODE=UI_LOGIN
       - AUTH_USERNAME=${username}
       - AUTH_PASSWORD=${password}
-      #- EXTENSION_REPOS=["http://github.com/orginazation-name/repo-name", "http://github.com/orginazation-name-2/repo-name-2"]
-      - EXTENSION_REPOS=["https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json", "https://raw.githubusercontent.com/yuzono/cursed-manga-repo/repo/index.min.json"]
+#      - EXTENSION_STORES=["https://raw.githubusercontent.com/MY_ACCOUNT/MY_EXTENSION_STORE/repo/index.min.json", "https://raw.githubusercontent.com/MY_ACCOUNT_2/MY_REPO_2/repo/index.pb"]
+      - EXTENSION_STORES=["https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.pb", "https://raw.githubusercontent.com/yuzono/cursed-manga-repo/repo/index.min.json"]
       - UPDATE_EXCLUDE_UNREAD=false
       - UPDATE_EXCLUDE_STARTED=false
       - UPDATE_EXCLUDE_COMPLETED=false
