@@ -1,0 +1,14 @@
+services: 
+  docktail:
+    container_name: docktail
+    image: ghcr.io/marvinvr/docktail:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/tailscale:/var/run/tailscale
+    environment:
+      - TAILSCALE_OAUTH_CLIENT_ID=${TAILSCALE_OAUTH_CLIENT_ID}
+      - TAILSCALE_OAUTH_CLIENT_SECRET=${TAILSCALE_OAUTH_CLIENT_SECRET}
+      - DEFAULT_SERVICE_TAGS=tag:docktail
+      - IGNORE_SERVICE_NAMES=${IGNORE_SERVICE_NAMES} #ignore these service from being deleted/unlisted - mainly useful for services which are not done from docktail
+      - DELETE_UNUSED_SERVICES=true
