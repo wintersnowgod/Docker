@@ -1,13 +1,98 @@
 #!/usr/bin/env bash
 
-cd "$(dirname "$(readlink -f "$0")")" || exit 1
+loadConfig() {
+  configDir="${XDG_CONFIG_HOME:-$HOME/.config}/pkgmgr"
+  configFile="$configDir/config.toml"
 
-declare -A postStartScripts
-postStartScripts=(
-  ["diun.yml"]="webhooknotif.py --port 9999"
-  # Add more mappings as needed:
-  # ["other.yml"]="echo 'Container started'"
-)
+  createDefaultConfig() {
+    mkdir -p "$(dirname "$configFile")"
+
+    cat >"$configFile" <<'EOF'
+# Compose directories (supports multiple paths)
+composeDir = ["."]
+scriptDir = ["."]
+ignoreFiles = []
+
+# map of compose file -> script + args
+[postStartScripts]
+# "diun.yml" = "webhooknotif.py --port 9999"
+EOF
+  }
+  if [[ ! -f "$configFile" ]]; then
+    createDefaultConfig
+  fi
+
+  declare -ga composeDir=()
+  declare -ga scriptDir=()
+  declare -ga ignoreFiles=()
+  declare -gA postStartScripts=()
+
+  parseTomlConfig() {
+    expandVars() {
+      local str="$1"
+      if command -v envsubst >/dev/null 2>&1; then
+        echo "$str" | envsubst
+      else
+        str="${str//\$HOME/$HOME}"
+        str="${str//\$USER/$USER}"
+        echo "$str"
+      fi
+    }
+
+    parseArray() {
+      local key="$1"
+      local arrName="$2"
+      local line
+
+      line=$(sed -n "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*\(.*\)/\1/p" "$configFile" | head -1)
+      [[ -z "$line" ]] && return
+
+      # Extract all double-quoted strings, remove quotes, expand vars
+      local items=()
+      while IFS= read -r quoted; do
+        local item="${quoted#\"}"
+        item="${item%\"}"
+        item=$(expandVars "$item")
+        items+=("$item")
+      done < <(echo "$line" | grep -oE '"([^"]*)"')
+
+      eval "${arrName}=(\"\${items[@]}\")"
+    }
+
+    parseArray "composeDir" "composeDir"
+    parseArray "scriptDir" "scriptDir"
+    parseArray "ignoreFiles" "ignoreFiles"
+
+    local startLine endLine
+    startLine=$(sed -n '/^[[:space:]]*\[postStartScripts\][[:space:]]*$/=' "$configFile" | head -1)
+    if [[ -n "$startLine" ]]; then
+      endLine=$(sed -n "$((startLine + 1)),\$ { /^[[:space:]]*\[/ { =; q } }" "$configFile")
+      [[ -z "$endLine" ]] && endLine=$(wc -l <"$configFile")
+
+      while IFS= read -r line; do
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        if [[ "$line" =~ ^[[:space:]]*\"([^\"]+)\"[[:space:]]*=[[:space:]]*\"([^\"]*)\"[[:space:]]*$ ]]; then
+          local key="${BASH_REMATCH[1]}"
+          local val="${BASH_REMATCH[2]}"
+          val=$(expandVars "$val")
+          postStartScripts["$key"]="$val"
+        fi
+      done < <(sed -n "$((startLine + 1)),$((endLine - 1))p" "$configFile")
+    fi
+  }
+  parseTomlConfig
+}
+loadConfig
+
+debugMain() {
+  echo "$configFile"
+  echo "$configDir"
+  declare -p composeDir
+  declare -p scriptDir
+  declare -p ignoreFiles
+  declare -p postStartScripts
+  echo
+}
 
 startSkipped=()
 startFailed=()
@@ -27,9 +112,6 @@ restartSuccess=()
 
 updateFailed=()
 updateSuccess=()
-
-# List of files to ignore (just the filename, not the path)
-ignoreFiles=("hwaccel.ml.yml" "hwaccel.transcoding.yml")
 
 isIgnored() {
   local file="$1"
@@ -74,62 +156,96 @@ postStartScriptAction() {
 
   [[ -z "${postStartScripts[$composeFileBasename]}" ]] && return
 
-  local postStartScript="${postStartScripts[$composeFileBasename]}"
-  local postStartScriptBase="${postStartScript%% *}"
-  local postStartScriptArgs=""
-  if [[ "$postStartScript" == *" "* ]]; then
-    postStartScriptArgs="${postStartScript#* }"
-  fi
+  local -a postStartScript=()
+  read -r -a postStartScript <<<"${postStartScripts[$composeFileBasename]}"
+  local postStartScriptBase="${postStartScript[0]}"
+  local -a postStartScriptArgs=("${postStartScript[@]:1}")
 
-  local -a postStartScriptArgsArray=()
-  [[ -n "$postStartScriptArgs" ]] && read -r -a postStartScriptArgsArray <<<"$postStartScriptArgs"
+  local postStartScriptName=""
+  local matches=()
+  for scriptdir in "${scriptDir[@]}"; do
+    [[ -z "$scriptdir" ]] && continue
+    [[ ! -d "$scriptdir" ]] && continue
 
-  local postStartScriptName
-  postStartScriptName=$(find . -maxdepth 2 -type f -name "$postStartScriptBase" -print -quit)
+    while IFS= read -r match; do
+      [[ -n "$match" ]] && matches+=("$match")
+    done < <(
+      find "$scriptdir" -maxdepth 2 -type f -name "$postStartScriptBase" -print
+    )
+  done
 
-  if [[ -z "$postStartScriptName" ]]; then
-    echo "   Warning: Could not find $postStartScriptBase within maxdepth 2. Skipping."
+  case ${#matches[@]} in
+  1)
+    postStartScriptName="${matches[0]}"
+    echo "   Found script at: $postStartScriptName"
+    chmod +x "$postStartScriptName"
 
     if [[ "$action" == "start" ]]; then
-      startPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
-    else
-      stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
-    fi
-    return
-  fi
+      echo "   Running: $postStartScriptName ${postStartScriptArgs[*]}"
+      nohup "$postStartScriptName" "${postStartScriptArgs[@]}" >/dev/null 2>&1 &
+      pid=$!
+      echo "$pid" >"/tmp/${postStartScriptBase}.pid"
+      sleep 1
 
-  echo "   Found script at: $postStartScriptName"
-  chmod +x "$postStartScriptName"
-
-  if [[ "$action" == "start" ]]; then
-    echo "   Running: $postStartScriptName $postStartScriptArgs"
-    nohup "$postStartScriptName" "${postStartScriptArgsArray[@]}" >/dev/null 2>&1 &
-    pid=$!
-
-    sleep 1
-
-    if kill -0 "$pid" 2>/dev/null; then
-      startPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
-    else
-      startPostStartScriptFailed+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
-    fi
-  else
-    echo "   Stopping: $postStartScriptName $postStartScriptArgs"
-
-    mapfile -t pids < <(pgrep -f "$postStartScriptName ${postStartScriptArgsArray[*]}")
-
-    if ((${#pids[@]})); then
-      if kill -9 "${pids[@]}"; then
-        stopPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgsArray[*]}")
+      if kill -0 "$pid" 2>/dev/null; then
+        echo "   Successfully Started Script"
+        startPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgs[*]}")
       else
-        stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
-        return 1
+        echo "   Couldnot Start Script"
+        startPostStartScriptFailed+=("$postStartScriptName ${postStartScriptArgs[*]}")
+      fi
+    elif [[ "$action" == "stop" ]]; then
+      echo "   Stopping: $postStartScriptName ${postStartScriptArgs[*]}"
+
+      pid_file="/tmp/${postStartScriptBase}.pid"
+
+      if [[ -f "$pid_file" ]]; then
+        pid=$(cat "$pid_file")
+        if kill -9 "$pid" >/dev/null 2>&1; then
+          rm -f "$pid_file"
+          echo "   Successfully stopped Script"
+          stopPostStartScriptSuccess+=("$postStartScriptName ${postStartScriptArgs[*]}")
+        else
+          echo "   Couldnot stop script"
+          stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgs[*]}")
+          return 1
+        fi
+      else
+        echo "   Script was already stopped"
+        stopPostStartScriptSkipped+=("$postStartScriptBase ${postStartScriptArgs[*]}")
       fi
     else
-      echo "Script was already stopped"
-      stopPostStartScriptSkipped+=("$postStartScriptBase ${postStartScriptArgsArray[*]}")
+      echo "Unknown Action for Script"
     fi
-  fi
+    ;;
+
+  0)
+    echo "   Warning: Could not find $postStartScriptBase within scriptDir. Skipping." >&2
+
+    if [[ "$action" == "start" ]]; then
+      startPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgs[*]}")
+    elif [[ "$action" == "stop" ]]; then
+      stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgs[*]}")
+    else
+      echo "Unknown Action for Script"
+    fi
+    return 1
+    ;;
+
+  *)
+    echo "Error: multiple scripts found for '$postStartScriptBase':" >&2
+    printf '  %s\n' "${matches[@]}" >&2
+
+    if [[ "$action" == "start" ]]; then
+      startPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgs[*]}")
+    elif [[ "$action" == "stop" ]]; then
+      stopPostStartScriptFailed+=("$postStartScriptBase ${postStartScriptArgs[*]}")
+    else
+      echo "Unknown Action for Script"
+    fi
+    return 1
+    ;;
+  esac
 }
 
 startScript() {
@@ -140,26 +256,48 @@ stopScript() {
   postStartScriptAction stop "$1"
 }
 
+findComposeFile() {
+  local input="$1"
+  local dir
+  for dir in "${composeDir[@]:-.}"; do
+    if [[ -n "$input" ]]; then
+      if [[ "$input" =~ \.(yml|yaml)$ ]]; then
+        find "$dir" -maxdepth 2 -type f -name "$input"
+      else
+        find "$dir" -maxdepth 2 -type f \( -name "$input.yml" -o -name "$input.yaml" \)
+      fi
+    else
+      find "$dir" -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \)
+    fi
+  done
+}
+
 resolveComposeFile() {
   local input="$1"
+  local output
 
-  if [ -f "$input" ]; then
+  if [[ -f "$input" ]]; then
     realpath "$input"
     return
   fi
 
-  if [[ "$input" =~ \.(yml|yaml)$ ]]; then
-    find . -maxdepth 2 -type f -name "$input" | head -n 1
-  else
-    find . -maxdepth 2 -type f \( -name "$input.yml" -o -name "$input.yaml" \) | head -n 1
+  output=$(findComposeFile "$input" | head -n 1)
+
+  if [[ -z "$output" ]]; then
+    echo "Error: no specified yml/yaml file found" >&2
+    return 1
   fi
+
+  realpath "$output"
 }
 
 runComposeFiles() {
-  if [ -n "$1" ]; then
-    resolveComposeFile "$1"
+  local output
+
+  if [[ -n "$1" ]]; then
+    findComposeFile "$1" | head -n 1
   else
-    find . -maxdepth 2 -type f \( -name "*.yml" -o -name "*.yaml" \)
+    findComposeFile
   fi
 }
 
@@ -351,10 +489,12 @@ processFile() {
 }
 
 runMain() {
+  local showIgnored=false
   local action="$1"
   shift
 
   if [ $# -eq 0 ]; then
+    showIgnored=true
     while read -r composeFile; do
       echo
       processFile "$action" "$composeFile"
@@ -362,6 +502,13 @@ runMain() {
     done < <(runComposeFiles)
   else
     for input in "$@"; do
+      for ignored in "${ignoreFiles[@]}"; do
+        if [[ "$input" == "$ignored" ]]; then
+          showIgnored=true
+          ignoredFile+=("$input")
+          break 2
+        fi
+      done
       while read -r composeFile; do
         echo
         processFile "$action" "$composeFile"
@@ -371,8 +518,9 @@ runMain() {
   fi
 
   echo -e "\n===== SUMMARY ====="
-
-  ((${#ignoreFiles[@]})) && echo -e "\nIgnored Files:" && printf ' \033[1mℹ\033[0m %s\n' "${ignoreFiles[@]}"
+  if $showIgnored; then
+    ((${#ignoredFile[@]})) && echo -e "\nIgnored:" && printf ' \033[1mℹ\033[0m %s\n' "${ignoredFile[@]}"
+  fi
 
   case "$action" in
   start)
@@ -441,6 +589,7 @@ helpMenu() {
 case "$1" in
 "start" | "stop" | "restart" | "update") runMain "$@" ;;
 "status") runAction "$@" ;;
+"--debug") loadConfig "$@"; debugMain;;
 --help | -h) helpMenu ;;
 *) helpMenu ;;
 esac
