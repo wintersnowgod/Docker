@@ -12,15 +12,15 @@ IGNORE_SERVICE_NAMES=service1,service2,... #services to ignore (useful for the s
 ```
 "tagOwners": {
     "tag:server":         ["autogroup:admin"],
-    "tag:doctail":        ["autogroup:admin"],
+    "tag:docktail":        ["autogroup:admin"],
 },
 "autoApprovers": {
     "services": {
-        "tag:doctail": ["tag:server"],
+        "tag:docktail": ["tag:server"],
     },
 },
 ```
-you can change the tags as you see fit but I use `server` for my host machine and `doctail` for my doctail services (by the way the default tags for the services is `container` but I changed it to doctail in the compose file.)  
+you can change the tags as you see fit but I use `server` for my host machine and `docktail` for my docktail services (by the way the default tags for the services is `container` but I changed it to `docktail`` in the compose file.)  
 Then tag your host machine for the services as server in your machines dashboard in https://login.tailscale.com/admin/machines  
 click at the `...` next to your machine-goto Edit ACL tags-and choose the tag `server`.  
 2. Now, Go to https://login.tailscale.com/admin/settings/trust-credentials and create a new `oauth` credential with scopes  
@@ -28,7 +28,7 @@ click at the `...` next to your machine-goto Edit ACL tags-and choose the tag `s
 general-services = read,write
 devices-core = read,write
 ```
-and choose tag `doctail` for both when prompted.  
+and choose tag `docktail` for both when prompted.  
 - Now the setup on the tailscale website is done. Everything else is done on your compose files with labels.  
 - In each of your preferred compose file to appear in tailscale services, add these on the services:-
 ```
@@ -37,7 +37,7 @@ and choose tag `doctail` for both when prompted.
       - "docktail.service.name=yourpreferredservicename"
       - "docktail.service.port=theportatwhichyouaccesstheservice"
       - "docktail.service.service-port=443" #the port at which the tailscale exposes the service. leave this 443 if you just want https access
-      - "docktail.tags=tag:doctail" #the tag to do for the service. need doctail tag or else it will error.
+      - "docktail.tags=tag:docktail" #the tag to do for the service. need docktail tag or else it will error.
 ```
 - OPTIONAL:- If you need to set different ports in tailscale services on the same service you can do it this way for the label using numbered labels-  
 ```
@@ -51,7 +51,7 @@ and choose tag `doctail` for both when prompted.
       - "docktail.service.1.port=53"
       - "docktail.service.1.service-port=53"
       - "docktail.service.1.protocol=tcp" #default protocol is https so no need to specify for https. only specify if not https
-      - "docktail.tags=tag:doctail"
+      - "docktail.tags=tag:docktail"
 ```
 `yourservice` should be the same service for both if you want it in same service. different if you want 2 services from same docker with different ports  
 - Run with  

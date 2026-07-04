@@ -54,4 +54,4 @@ services:
       - "docktail.service.1.port=53"
       - "docktail.service.1.service-port=53"
       - "docktail.service.1.protocol=tcp"
-      - "docktail.tags=tag:doctail"
+      - "docktail.tags=tag:docktail"

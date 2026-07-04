@@ -64,7 +64,7 @@ services:
       - "docktail.service.name=suwayomi"
       - "docktail.service.port=4567"
       - "docktail.service.service-port=443"
-      - "docktail.tags=tag:doctail"
+      - "docktail.tags=tag:docktail"
 
   postgresql:
     image: postgres:18.4
