@@ -61,7 +61,7 @@ services:
     restart: unless-stopped
 
   postgresql:
-    image: postgres:18.3
+    image: postgres:18.4
     container_name: swuwayomi-postgresql
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
