@@ -9,7 +9,6 @@ services:
       - ./filebrowser/database:/database
       - ./filebrowser/config:/config
     restart: unless-stopped
-    user: root
     labels:
       - "docktail.service.enable=true"
       - "docktail.service.name=filebrowser"
