@@ -1,0 +1,28 @@
+services:
+  filebrowser:
+    image: gtstef/filebrowser:latest
+    container_name: filebrowserquantum
+    ports:
+      - 8900:80
+    restart: unless-stopped
+    # user: filebrowser
+    volumes:
+      - ./filebrowser/data:/home/filebrowser/data
+      - /home:/files
+      # - /other/dir:/dir # Add other sources
+    user: root
+    environment:
+      - "FILEBROWSER_CONFIG=data/config.yaml" # using our config file at ./data/config.yaml
+      - "FILEBROWSER_ADMIN_PASSWORD=${FILEBROWSER_ADMIN_PASSWORD}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"] # port should match the internal port 80
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=filebrowserquantum"
+      - "docktail.service.port=80"
+      - "docktail.service.service-port=443"
+      - "docktail.tags=tag:docktail"

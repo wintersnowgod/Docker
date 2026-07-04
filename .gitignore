@@ -6,6 +6,8 @@ suwayomi/suwayomi/
 syncyomi/syncyomi/
 syncthing/syncthing/
 filebrowser/filebrowser/
+filebrowserquantum/filebrowser/data/tmp
+filebrowserquantum/filebrowser/data/database.db
 pihole/pihole/
 immich/immich/
 homarr/homarr/
