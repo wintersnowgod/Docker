@@ -69,7 +69,7 @@ services:
 
   postgresql:
     image: postgres:18.4
-    container_name: swuwayomi-postgresql
+    container_name: suwayomi-postgresql
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
