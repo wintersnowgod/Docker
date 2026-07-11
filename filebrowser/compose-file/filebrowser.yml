@@ -15,3 +15,4 @@ services:
       - "docktail.service.port=80"
       - "docktail.service.service-port=443"
       - "docktail.tags=tag:docktail"
+      - "docktail.service.description=File Manager to access files on the server"

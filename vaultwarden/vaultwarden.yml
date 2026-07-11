@@ -1,10 +1,10 @@
 services:
   vaultwarden:
     container_name: vaultwarden
-    image: 'vaultwarden/server:latest'
+    image: "vaultwarden/server:latest"
     restart: unless-stopped
     environment:
-     - DOMAIN=${VAULTWARDEN_DOMAIN}
+      - DOMAIN=${VAULTWARDEN_DOMAIN}
     volumes:
       - ./vaultwarden/vw-data/:/data/
     ports:
@@ -15,3 +15,4 @@ services:
       - "docktail.service.port=80"
       - "docktail.service.service-port=443"
       - "docktail.tags=tag:docktail"
+      - "docktail.service.description=Password Manager"

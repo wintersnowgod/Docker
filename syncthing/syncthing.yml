@@ -22,3 +22,4 @@ services:
       - "docktail.service.port=8384"
       - "docktail.service.service-port=443"
       - "docktail.tags=tag:docktail"
+      - "docktail.service.description=File Syncronization"
