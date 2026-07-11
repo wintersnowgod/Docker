@@ -35,6 +35,7 @@ services:
       - "docktail.service.name=immich"
       - "docktail.service.port=2283"
       - "docktail.service.service-port=443"
+      - "docktail.service.direct=false"
       - "docktail.tags=tag:docktail"
       - "docktail.service.description=Image Server"
 
