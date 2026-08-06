@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 loadConfig() {
-  configDir="${XDG_CONFIG_HOME:-$HOME/.config}/pkgmgr"
+  configDir="${XDG_CONFIG_HOME:-$HOME/.config}/dockerctl"
   configFile="$configDir/config.toml"
 
   createDefaultConfig() {
@@ -589,7 +589,10 @@ helpMenu() {
 case "$1" in
 "start" | "stop" | "restart" | "update") runMain "$@" ;;
 "status") runAction "$@" ;;
-"--debug") loadConfig "$@"; debugMain;;
+"--debug")
+  loadConfig "$@"
+  debugMain
+  ;;
 --help | -h) helpMenu ;;
 *) helpMenu ;;
 esac
