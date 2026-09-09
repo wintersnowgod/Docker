@@ -8,7 +8,7 @@ services:
     volumes:
       - ./vaultwarden/vw-data/:/data/
     ports:
-      - 81:80
+      - 8081:80
     labels:
       - "docktail.service.enable=true"
       - "docktail.service.name=vaultwarden"
@@ -16,4 +16,4 @@ services:
       - "docktail.service.service-port=443"
       - "docktail.service.direct=false"
       - "docktail.tags=tag:docktail"
-      - "docktail.service.description=Password Manager"
+      - "docktail.service.description=Selfhosted Bitwarden Password Manager"
