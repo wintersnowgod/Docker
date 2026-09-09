@@ -2,7 +2,7 @@
 services:
   pihole:
     container_name: pihole
-    image: pihole/pihole:latest
+    image: docker.io/pihole/pihole:latest
     # ports:
     #   # DNS Ports
     #   - "53:53/tcp"
@@ -48,7 +48,7 @@ services:
   ts-pihole: #I use example to give example name replace it with the name for your actual service
     container_name: ts-pihole
     hostname: pihole
-    image: tailscale/tailscale:latest
+    image: docker.io/tailscale/tailscale:latest
     ports:
       - 84:80 #exposes your service in port for localhost
     environment:

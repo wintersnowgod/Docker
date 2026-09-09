@@ -2,7 +2,7 @@ name: diun
 
 services:
   diun:
-    image: crazymax/diun:latest
+    image: docker.io/crazymax/diun:latest
     container_name: diun
     command: serve
     volumes:

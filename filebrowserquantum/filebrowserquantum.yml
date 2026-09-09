@@ -1,6 +1,6 @@
 services:
   filebrowser:
-    image: gtstef/filebrowser:latest
+    image: docker.io/gtstef/filebrowser:latest
     container_name: filebrowserquantum
     ports:
       - 8900:80

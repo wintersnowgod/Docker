@@ -69,7 +69,7 @@ services:
       - "docktail.service.description=Manga Reader"
 
   postgresql:
-    image: postgres:18.4
+    image: docker.io/library/postgres:18.4
     container_name: suwayomi-postgresql
     environment:
       - POSTGRES_USER=${POSTGRES_USER}

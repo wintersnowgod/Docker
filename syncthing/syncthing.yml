@@ -1,6 +1,6 @@
 services:
   syncthing:
-    image: syncthing/syncthing
+    image: docker.io/syncthing/syncthing
     container_name: syncthing
     hostname: HPX360
     environment:
