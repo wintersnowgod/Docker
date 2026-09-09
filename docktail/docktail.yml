@@ -4,8 +4,15 @@ services:
     image: ghcr.io/marvinvr/docktail:latest
     restart: unless-stopped
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/run/tailscale:/var/run/tailscale
+        - /var/run/tailscale:/var/run/tailscale
+        ##Docker
+        #- /var/run/docker.sock:/var/run/docker.sock:ro
+        ##Podman
+        ## root mode
+        #- "/run/podman/podman.sock:/var/run/docker.sock"
+        ## rootless mode
+        - "$XDG_RUNTIME_DIR/podman/podman.sock:/var/run/docker.sock"
+        #- "/run/user/1000/podman/podman.sock:/var/run/docker.sock"
     environment:
       - TAILSCALE_OAUTH_CLIENT_ID=${TAILSCALE_OAUTH_CLIENT_ID}
       - TAILSCALE_OAUTH_CLIENT_SECRET=${TAILSCALE_OAUTH_CLIENT_SECRET}
