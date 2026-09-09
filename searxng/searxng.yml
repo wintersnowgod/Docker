@@ -41,5 +41,6 @@ services:
       - "docktail.service.name=searxng"
       - "docktail.service.port=8080"
       - "docktail.service.service-port=443"
+      - "docktail.service.direct=false"
       - "docktail.tags=tag:docktail"
       - "docktail.service.description=Search Engine"

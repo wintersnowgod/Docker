@@ -21,5 +21,6 @@ services:
       - "docktail.service.name=syncthing"
       - "docktail.service.port=8384"
       - "docktail.service.service-port=443"
+      - "docktail.service.direct=false"
       - "docktail.tags=tag:docktail"
       - "docktail.service.description=File Syncronization"

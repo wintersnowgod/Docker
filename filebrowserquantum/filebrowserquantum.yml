@@ -25,5 +25,6 @@ services:
       - "docktail.service.name=filebrowserquantum"
       - "docktail.service.port=80"
       - "docktail.service.service-port=443"
+      - "docktail.service.direct=false"
       - "docktail.tags=tag:docktail"
       - "docktail.service.description=File Manager to access files on the server"

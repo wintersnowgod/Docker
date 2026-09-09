@@ -14,5 +14,6 @@ services:
       - "docktail.service.name=syncyomi"
       - "docktail.service.port=8282"
       - "docktail.service.service-port=443"
+      - "docktail.service.direct=false"
       - "docktail.tags=tag:docktail"
       - "docktail.service.description=Tachiyomi/Mihon (Supported Forks) Library Backup and Sync Service"
