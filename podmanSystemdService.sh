@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-BASE="$HOME/Projects/git/Personal/Docker"
+
 SYSTEMD="$HOME/.config/systemd/user"
+BASE="%h/Projects/git/Personal/Docker"
 
 mkdir -p "$SYSTEMD"
 
@@ -24,15 +25,20 @@ for name in "${!stacks[@]}"; do
   cat >"$SYSTEMD/$name.service" <<EOF
 [Unit]
 Description=Podman Compose - $project
-After=network-online.target
+
+Requires=podman.socket
+After=podman.socket network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+
 WorkingDirectory=$BASE
+
 ExecStart=/usr/bin/podman compose -f $compose_file -p $project up -d
 ExecStop=/usr/bin/podman compose -f $compose_file -p $project down
+
 TimeoutStartSec=0
 TimeoutStopSec=120
 
