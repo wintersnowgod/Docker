@@ -11,8 +11,8 @@ services:
         ## root mode
         #- "/run/podman/podman.sock:/var/run/docker.sock"
         ## rootless mode
-        - "$XDG_RUNTIME_DIR/podman/podman.sock:/var/run/docker.sock"
-        #- "/run/user/1000/podman/podman.sock:/var/run/docker.sock"
+        - $XDG_RUNTIME_DIR/podman/podman.sock:/var/run/docker.sock:ro
+        #- /run/user/1000/podman/podman.sock:/var/run/docker.sock:ro
     environment:
       - TAILSCALE_OAUTH_CLIENT_ID=${TAILSCALE_OAUTH_CLIENT_ID}
       - TAILSCALE_OAUTH_CLIENT_SECRET=${TAILSCALE_OAUTH_CLIENT_SECRET}
