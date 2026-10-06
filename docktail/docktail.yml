@@ -6,12 +6,12 @@ services:
     volumes:
         - /var/run/tailscale:/var/run/tailscale
         ##Docker
-        #- /var/run/docker.sock:/var/run/docker.sock:ro
+        - /var/run/docker.sock:/var/run/docker.sock:ro
         ##Podman
         ## root mode
         #- "/run/podman/podman.sock:/var/run/docker.sock"
         ## rootless mode
-        - $XDG_RUNTIME_DIR/podman/podman.sock:/var/run/docker.sock:ro
+        #- $XDG_RUNTIME_DIR/podman/podman.sock:/var/run/docker.sock:ro
         #- /run/user/1000/podman/podman.sock:/var/run/docker.sock:ro
     environment:
       - TAILSCALE_OAUTH_CLIENT_ID=${TAILSCALE_OAUTH_CLIENT_ID}

@@ -8,12 +8,12 @@ services:
     volumes:
       - "./diun/data:/data"
       ##Docker
-      #- "/var/run/docker.sock:/var/run/docker.sock"
+      - "/var/run/docker.sock:/var/run/docker.sock"
       ##Podman
       ## root mode
       #- "/run/podman/podman.sock:/var/run/docker.sock"
       ## rootless mode
-      - "$XDG_RUNTIME_DIR/podman/podman.sock:/var/run/docker.sock"
+      #- "$XDG_RUNTIME_DIR/podman/podman.sock:/var/run/docker.sock"
       #- "/run/user/1000/podman/podman.sock:/var/run/docker.sock"
     ##podman - security_opt is neccessary if you use podman in rootless mode to apply the correct SELinux rules
     security_opt:
